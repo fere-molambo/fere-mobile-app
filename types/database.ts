@@ -598,3 +598,48 @@ export interface ShopTeamMember {
   assigned_at: string;
   assigned_by?: string;
 }
+
+export interface DeviceToken {
+  id: string;
+  user_id: string;
+  token: string;
+  platform: string;
+  is_active: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface NotificationPreference {
+  id: string;
+  user_id: string;
+  order_status_updates?: boolean;
+  delivery_tracking?: boolean;
+  promotions?: boolean;
+  messages?: boolean;
+  booking_reminders?: boolean;
+  new_orders?: boolean;
+  order_cancellations?: boolean;
+  new_reviews?: boolean;
+  new_bookings?: boolean;
+  low_stock?: boolean;
+  new_delivery_available?: boolean;
+  delivery_status_changes?: boolean;
+  payout_updates?: boolean;
+  created_at: string;
+  updated_at: string;
+}
+
+export interface LiveTrackingSession {
+  id: string;
+  tracker_id: string;
+  tracker_role: string;
+  reference_type: string;
+  reference_id: string;
+  current_lat?: number;
+  current_lng?: number;
+  heading?: number;
+  speed?: number;
+  is_active: boolean;
+  started_at: string;
+  updated_at: string;
+}

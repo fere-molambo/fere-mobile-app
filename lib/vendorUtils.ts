@@ -6,8 +6,7 @@ export async function resolveVendorShopIds(userId: string, role: AppRole): Promi
     const { data } = await supabase
       .from('shops')
       .select('id')
-      .eq('owner_id', userId)
-      .eq('is_active', true);
+      .eq('owner_id', userId);
     return (data || []).map((s) => s.id);
   }
 

@@ -3,7 +3,7 @@ import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   ActivityIndicator, Image,
 } from 'react-native';
-import { Store, Camera } from 'lucide-react-native';
+import { Store, Camera, AlertTriangle } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '@/lib/supabase';
 import { resolveVendorShopIds } from '@/lib/vendorUtils';
@@ -102,6 +102,7 @@ export default function VendorShopScreen({ userId, userRole }: Props) {
   const [loading, setLoading] = useState(true);
   const [tab, setTab] = useState<ShopTab>('infos');
   const [uploadingLogo, setUploadingLogo] = useState(false);
+  const [uploadingBanner, setUploadingBanner] = useState(false);
 
   const [productModal, setProductModal] = useState(false);
   const [serviceModal, setServiceModal] = useState(false);
@@ -167,6 +168,40 @@ export default function VendorShopScreen({ userId, userRole }: Props) {
       console.error('Logo upload error:', err);
     } finally {
       setUploadingLogo(false);
+    }
+  };
+
+  const handleChangeBanner = async () => {
+    if (!shop) return;
+    const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
+    if (status !== 'granted') return;
+
+    const result = await ImagePicker.launchImageLibraryAsync({
+      mediaTypes: ['images'],
+      allowsEditing: true,
+      aspect: [16, 9],
+      quality: 0.8,
+    });
+
+    if (result.canceled || !result.assets[0]) return;
+
+    setUploadingBanner(true);
+    try {
+      const uri = result.assets[0].uri;
+      const ext = uri.split('.').pop() || 'jpg';
+      const fileName = `${shop.id}/banner_${Date.now()}.${ext}`;
+      const response = await fetch(uri);
+      const blob = await response.blob();
+
+      await supabase.storage.from('shop-logos').upload(fileName, blob, { contentType: `image/${ext}`, upsert: true });
+      const { data: urlData } = supabase.storage.from('shop-logos').getPublicUrl(fileName);
+
+      await supabase.from('shops').update({ banner_url: urlData.publicUrl, updated_at: new Date().toISOString() }).eq('id', shop.id);
+      await loadData();
+    } catch (err) {
+      console.error('Banner upload error:', err);
+    } finally {
+      setUploadingBanner(false);
     }
   };
 
@@ -238,12 +273,29 @@ export default function VendorShopScreen({ userId, userRole }: Props) {
     <View style={styles.container}>
       <AppHeader hideCart />
 
+      {!shop.is_active && (
+        <View style={styles.inactiveBanner}>
+          <AlertTriangle size={16} color="#92400e" />
+          <Text style={styles.inactiveBannerText}>
+            Boutique inactive {shop.verification_status === 'pending' ? '- en attente de verification' : '- activez-la dans les parametres'}
+          </Text>
+        </View>
+      )}
+
       <View style={styles.shopHeader}>
-        {shop.banner_url ? (
-          <Image source={{ uri: shop.banner_url }} style={styles.banner} />
-        ) : (
-          <View style={[styles.banner, styles.bannerPlaceholder]} />
-        )}
+        <TouchableOpacity onPress={handleChangeBanner} disabled={uploadingBanner} activeOpacity={0.8}>
+          {shop.banner_url ? (
+            <Image source={{ uri: shop.banner_url }} style={styles.banner} />
+          ) : (
+            <View style={[styles.banner, styles.bannerPlaceholder]}>
+              {uploadingBanner ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Camera size={20} color="#999" />
+              )}
+            </View>
+          )}
+        </TouchableOpacity>
         <View style={styles.logoArea}>
           {shop.logo_url ? (
             <Image source={{ uri: shop.logo_url }} style={styles.logo} resizeMode="cover" />
@@ -303,11 +355,17 @@ export default function VendorShopScreen({ userId, userRole }: Props) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f5f5f5' },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32, gap: 12 },
+  inactiveBanner: {
+    flexDirection: 'row', alignItems: 'center', gap: 8,
+    backgroundColor: '#fef3c7', paddingHorizontal: 16, paddingVertical: 10,
+    borderBottomWidth: 1, borderBottomColor: '#fcd34d',
+  },
+  inactiveBannerText: { fontSize: 13, color: '#92400e', flex: 1 },
   emptyTitle: { fontSize: 18, fontWeight: '700', color: '#1a1a1a' },
   emptyText: { fontSize: 14, color: '#666', textAlign: 'center' },
   shopHeader: { backgroundColor: '#fff', position: 'relative', overflow: 'visible', zIndex: 1 },
   banner: { width: '100%', height: 140 },
-  bannerPlaceholder: { backgroundColor: '#d4c5b0' },
+  bannerPlaceholder: { backgroundColor: '#d4c5b0', justifyContent: 'center', alignItems: 'center' },
   logoArea: { position: 'absolute', bottom: -28, left: 20, zIndex: 2 },
   logo: {
     width: 64, height: 64, borderRadius: 12, borderWidth: 3, borderColor: '#fff',

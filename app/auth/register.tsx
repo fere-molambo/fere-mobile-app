@@ -24,6 +24,7 @@ export default function RegisterScreen() {
   const roleOptions: { value: AppRole; label: string }[] = [
     { value: 'client', label: 'Membre' },
     { value: 'livreur', label: 'Livreur' },
+    { value: 'vendeur', label: 'Vendeur' },
   ];
 
   const handleRegister = async () => {

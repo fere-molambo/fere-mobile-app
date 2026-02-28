@@ -98,8 +98,7 @@ export default function VendorHomeScreen({ userId }: VendorHomeScreenProps) {
     const { data } = await supabase
       .from('shops')
       .select('id')
-      .eq('owner_id', userId)
-      .eq('is_active', true);
+      .eq('owner_id', userId);
     const ids = (data || []).map((s) => s.id);
     setShopIds(ids);
     return ids;
