@@ -225,7 +225,7 @@ export default function CheckoutScreen() {
     setError(null);
 
     try {
-      const paymentGroupId = `${Date.now().toString(36)}-${Math.random().toString(36).substring(2, 10)}`;
+      const paymentGroupId = crypto.randomUUID();
       const paymentReference = generateOrderNumber();
       const isWeb = Platform.OS === 'web';
       const callbackUrl = isWeb ? getPaymentCallbackUrl() : undefined;

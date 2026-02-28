@@ -171,6 +171,11 @@ async function completeOrderBalance(
   return { order_id: orderId };
 }
 
+function isValidUUID(val: unknown): boolean {
+  if (typeof val !== "string") return false;
+  return /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i.test(val);
+}
+
 async function completeCheckout(
   supabase: ReturnType<typeof createClient>,
   checkoutData: any,
@@ -179,6 +184,7 @@ async function completeCheckout(
 ) {
   const data = checkoutData;
   const orderIds: string[] = [];
+  const safeGroupId = isValidUUID(data.paymentGroupId) ? data.paymentGroupId : null;
 
   for (const shopOrder of data.summary.shopOrders) {
     const orderNumber = generateOrderNumber();
@@ -215,7 +221,7 @@ async function completeCheckout(
         payment_reference: ref,
         payment_method: "paystack",
         is_multi_vendor: data.isMultiVendor,
-        payment_group_id: data.paymentGroupId,
+        payment_group_id: safeGroupId,
       })
       .select("id")
       .single();
@@ -287,7 +293,7 @@ async function completeCheckout(
     payment_type: "order",
     related_id: orderIds[0],
     paid_at: new Date().toISOString(),
-    metadata: { order_ids: orderIds, payment_group_id: data.paymentGroupId },
+    metadata: { order_ids: orderIds, payment_group_id: safeGroupId },
   });
 
   for (const shopOrder of data.summary.shopOrders) {
