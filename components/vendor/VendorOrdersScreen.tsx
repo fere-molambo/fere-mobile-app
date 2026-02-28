@@ -13,6 +13,7 @@ import VendorBookingDetailSheet from '@/components/vendor/VendorBookingDetailShe
 import OrderFilters, { getDateRangeStart, type DatePreset } from '@/components/vendor/OrderFilters';
 import { resolveVendorShopIds, getVendorServiceIds } from '@/lib/vendorUtils';
 import { formatBookingDate, formatBookingTime, formatPrice } from '@/lib/bookingUtils';
+import { sendNotificationToUser } from '@/lib/notificationService';
 import type { AppRole, BookingStatus, BookingPaymentStatus } from '@/types/database';
 
 interface Props {
@@ -208,6 +209,20 @@ export default function VendorOrdersScreen({ userId, userRole }: Props) {
     if (action === 'arrived') { updates.status = 'arrived'; updates.arrived_at = now; updates.vendor_arrived_at = now; }
 
     await supabase.from('service_bookings').update(updates).eq('id', bookingId);
+
+    const target = bookings.find((b) => b.id === bookingId);
+    if (target?.customer?.id) {
+      const notifMap: Record<string, string> = {
+        accept: 'Votre reservation a ete acceptee',
+        on_the_way: 'Le prestataire est en route vers vous',
+        arrived: 'Le prestataire est arrive sur place',
+      };
+      const msg = notifMap[action];
+      if (msg) {
+        sendNotificationToUser(target.customer.id, 'Reservation', msg).catch(() => {});
+      }
+    }
+
     const updated = await loadBookings(shopIds);
     setBookings(updated);
     const fresh = updated.find((b) => b.id === bookingId);

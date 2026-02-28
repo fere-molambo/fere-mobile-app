@@ -5,6 +5,7 @@ import { AuthProvider } from '@/contexts/AuthContext';
 import { CartProvider } from '@/contexts/CartContext';
 import { ChatProvider } from '@/contexts/ChatContext';
 import CartModal from '@/components/CartModal';
+import NotificationHandler from '@/components/NotificationHandler';
 
 function RootLayoutInner() {
   return (
@@ -27,6 +28,7 @@ function RootLayoutInner() {
         <Stack.Screen name="+not-found" />
       </Stack>
       <CartModal />
+      <NotificationHandler />
       <StatusBar style="auto" />
     </>
   );

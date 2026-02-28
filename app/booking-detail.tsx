@@ -37,6 +37,7 @@ import {
 import { generateOrderNumber } from '@/lib/orderCalculations';
 import { savePendingPayment, getPaymentCallbackUrl, redirectToPaystack } from '@/lib/paymentRedirect';
 import type { ServiceBooking, BookingStatus, BookingPaymentStatus } from '@/types/database';
+import TrackingMap from '@/components/tracking/TrackingMap';
 
 const PROGRESS_STEPS: { key: BookingStatus; label: string }[] = [
   { key: 'pending', label: 'En attente' },
@@ -330,6 +331,15 @@ export default function BookingDetailScreen() {
             <Truck color="#0f766e" size={20} />
             <Text style={styles.liveInfoText}>Le prestataire est en route vers vous</Text>
           </View>
+        )}
+
+        {(status === 'on_the_way' || status === 'arrived') && booking.id && (
+          <TrackingMap
+            referenceId={booking.id}
+            referenceType="booking"
+            destinationLat={address?.geolocation_lat ?? undefined}
+            destinationLng={address?.geolocation_lng ?? undefined}
+          />
         )}
 
         {service && (

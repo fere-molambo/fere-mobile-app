@@ -2,6 +2,7 @@ import React, { createContext, useContext, useEffect, useState } from 'react';
 import { Session, User } from '@supabase/supabase-js';
 import { supabase } from '@/lib/supabase';
 import { Profile, AppRole } from '@/types/database';
+import { registerPushToken, unregisterPushToken } from '@/lib/notificationService';
 
 interface AuthContextType {
   session: Session | null;
@@ -88,6 +89,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
 
       if (roleError) throw roleError;
       setUserRole(roleData.role);
+      registerPushToken(userId).catch(() => {});
     } catch (error) {
       console.error('Error loading profile:', error);
     } finally {
@@ -137,12 +139,30 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (roleError) {
         console.error('Error assigning role:', roleError);
       }
+
+      if (role === 'vendeur') {
+        const slug = nomComplet
+          .toLowerCase()
+          .replace(/[^a-z0-9]+/g, '-')
+          .replace(/(^-|-$)/g, '')
+          + '-' + Date.now().toString(36);
+        await supabase.from('shops').insert({
+          owner_id: data.user.id,
+          name: nomComplet,
+          slug,
+          is_active: false,
+          verification_status: 'pending',
+        }).then(() => {});
+      }
     }
 
     return { error: null };
   };
 
   const signOut = async () => {
+    if (user) {
+      await unregisterPushToken(user.id).catch(() => {});
+    }
     setSession(null);
     setUser(null);
     setProfile(null);

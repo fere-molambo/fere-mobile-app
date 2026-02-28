@@ -46,6 +46,7 @@ import {
   canCancelBeforePickup,
 } from '@/components/order/OrderDetailConstants';
 import { styles } from '@/components/order/OrderDetailStyles';
+import TrackingMap from '@/components/tracking/TrackingMap';
 
 export default function OrderDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -115,7 +116,7 @@ export default function OrderDetailScreen() {
             id, quantity, unit_price, total_price,
             product:products(id, name, main_media_url)
           ),
-          delivery_address:delivery_addresses(id, label, address, city)
+          delivery_address:delivery_addresses(id, label, address, city, geolocation_lat, geolocation_lng)
         `)
         .eq('id', id as string)
         .maybeSingle();
@@ -542,6 +543,15 @@ export default function OrderDetailScreen() {
               })}
             </View>
           </View>
+        )}
+
+        {delivery && ['in_progress', 'picked_up', 'en_route_client', 'arrived'].includes(delivery.status) && (
+          <TrackingMap
+            referenceId={delivery.id}
+            referenceType="delivery"
+            destinationLat={order.delivery_address?.geolocation_lat ?? undefined}
+            destinationLng={order.delivery_address?.geolocation_lng ?? undefined}
+          />
         )}
 
         {order.delivery_address && (

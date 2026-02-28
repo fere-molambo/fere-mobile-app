@@ -39,6 +39,7 @@ import {
   type BookingPriceBreakdown,
 } from '@/lib/bookingUtils';
 import { savePendingPayment, getPaymentCallbackUrl, redirectToPaystack } from '@/lib/paymentRedirect';
+import { sendNotificationToUser } from '@/lib/notificationService';
 
 export default function BookingScreen() {
   const { serviceId, proposedPrice: proposedPriceParam } = useLocalSearchParams();
@@ -219,6 +220,15 @@ export default function BookingScreen() {
         .single();
 
       if (insertErr) throw insertErr;
+
+      if (service.shop?.owner_id) {
+        sendNotificationToUser(
+          service.shop.owner_id,
+          'Nouvelle reservation',
+          `Une nouvelle reservation pour "${service.name}" a ete effectuee.`,
+          { booking_id: booking.id }
+        ).catch(() => {});
+      }
 
       if (priceBreakdown.travelFee > 0) {
         const paymentReference = generateOrderNumber();

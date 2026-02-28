@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useRef, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { MapPin, Navigation, Phone, Package, Clock, CircleCheck as CheckCircle, MessageCircle } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
@@ -6,7 +6,16 @@ import { DeliveryRequest, DeliveryStatus } from '@/types/database';
 import { supabase } from '@/lib/supabase';
 import { formatDistance, formatEarnings, openGPSNavigation, callPhone, getNextAction } from '@/lib/driverUtils';
 import { startConversation } from '@/lib/chatUtils';
+import { startTracking } from '@/lib/trackingService';
+import { sendNotificationToUser } from '@/lib/notificationService';
 import DeliveryStatusBadge from './DeliveryStatusBadge';
+
+const DELIVERY_NOTIFICATION_LABELS: Partial<Record<DeliveryStatus, string>> = {
+  in_progress: 'Le livreur se dirige vers le point de collecte',
+  picked_up: 'Votre colis a ete recupere',
+  en_route_client: 'Le livreur est en route vers vous',
+  arrived: 'Le livreur est arrive a votre adresse',
+};
 
 interface ActiveDeliveryCardProps {
   delivery: DeliveryRequest;
@@ -20,6 +29,20 @@ export default function ActiveDeliveryCard({ delivery, userId, onUpdate }: Activ
   const [contactingClient, setContactingClient] = useState(false);
   const [contactingVendor, setContactingVendor] = useState(false);
   const [contactingAdmin, setContactingAdmin] = useState(false);
+  const trackingCleanupRef = useRef<(() => void) | null>(null);
+
+  useEffect(() => {
+    const shouldTrack = ['in_progress', 'picked_up', 'en_route_client'].includes(delivery.status);
+    if (shouldTrack) {
+      startTracking(userId, delivery.id, 'delivery', 'driver').then((result) => {
+        if (result) trackingCleanupRef.current = result.cleanup;
+      });
+    }
+    return () => {
+      trackingCleanupRef.current?.();
+      trackingCleanupRef.current = null;
+    };
+  }, [delivery.status, delivery.id, userId]);
 
   const handleContactClient = useCallback(async () => {
     if (!delivery.order_id || contactingClient) return;
@@ -111,6 +134,20 @@ export default function ActiveDeliveryCard({ delivery, userId, onUpdate }: Activ
 
       if (error) throw error;
       onUpdate();
+
+      const notifLabel = DELIVERY_NOTIFICATION_LABELS[nextAction.nextStatus as DeliveryStatus];
+      if (notifLabel && delivery.order_id) {
+        supabase
+          .from('orders')
+          .select('user_id')
+          .eq('id', delivery.order_id)
+          .maybeSingle()
+          .then(({ data: ord }) => {
+            if (ord?.user_id) {
+              sendNotificationToUser(ord.user_id, 'Livraison', notifLabel).catch(() => {});
+            }
+          });
+      }
     } catch {
       Alert.alert('Erreur', 'Impossible de mettre a jour le statut.');
     } finally {

@@ -290,6 +290,31 @@ async function completeCheckout(
     metadata: { order_ids: orderIds, payment_group_id: data.paymentGroupId },
   });
 
+  for (const shopOrder of data.summary.shopOrders) {
+    try {
+      const { data: shopData } = await supabase
+        .from("shops")
+        .select("owner_id")
+        .eq("id", shopOrder.shop.id)
+        .maybeSingle();
+      if (shopData?.owner_id) {
+        await fetch(`${SUPABASE_URL}/functions/v1/send-notification`, {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+            "Authorization": `Bearer ${SUPABASE_SERVICE_ROLE_KEY}`,
+          },
+          body: JSON.stringify({
+            user_id: shopData.owner_id,
+            title: "Nouvelle commande",
+            body: `Vous avez recu une nouvelle commande de ${shopOrder.items.length} article(s).`,
+            data: { order_id: orderIds[0] },
+          }),
+        });
+      }
+    } catch {}
+  }
+
   return { order_ids: orderIds };
 }
 
