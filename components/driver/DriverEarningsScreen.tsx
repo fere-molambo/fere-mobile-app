@@ -311,7 +311,18 @@ export default function DriverEarningsScreen({ userId }: DriverEarningsScreenPro
 
                   <View style={styles.earningsFooter}>
                     <DeliveryStatusBadge status={delivery.status} />
-                    <PayoutBadge status={payout?.status || 'pending'} />
+                    <View style={styles.footerRight}>
+                      <PayoutBadge status={payout?.status || 'pending'} />
+                      {payout?.status === 'paid' && payout.processed_at ? (
+                        <Text style={styles.dateHint}>
+                          Paye le {formatDate(payout.processed_at)}
+                        </Text>
+                      ) : payout?.eligible_at ? (
+                        <Text style={styles.dateHint}>
+                          Eligible le {formatDate(payout.eligible_at)}
+                        </Text>
+                      ) : null}
+                    </View>
                   </View>
                 </View>
               );
@@ -544,5 +555,13 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
+  },
+  footerRight: {
+    alignItems: 'flex-end',
+    gap: 4,
+  },
+  dateHint: {
+    fontSize: 11,
+    color: '#888',
   },
 });

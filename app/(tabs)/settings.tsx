@@ -5,6 +5,7 @@ import {
   Heart,
   Package,
   RotateCcw,
+  Wallet,
   Bell,
   HelpCircle,
   Scale,
@@ -78,6 +79,11 @@ const VENDOR_ACCOUNT_ITEMS: MenuItem[] = [
 
 const VENDOR_ACTIVITY_ITEMS: MenuItem[] = [
   {
+    icon: <Wallet color="#003f2f" size={20} />,
+    label: 'Mes versements',
+    route: '/settings/payouts',
+  },
+  {
     icon: <RotateCcw color="#003f2f" size={20} />,
     label: 'Remboursements',
     route: '/settings/transactions',
@@ -107,6 +113,14 @@ const DRIVER_ACCOUNT_ITEMS: MenuItem[] = [
     icon: <User color="#003f2f" size={20} />,
     label: 'Profil',
     route: '/settings/profile',
+  },
+];
+
+const DRIVER_ACTIVITY_ITEMS: MenuItem[] = [
+  {
+    icon: <Wallet color="#003f2f" size={20} />,
+    label: 'Mes versements',
+    route: '/settings/payouts',
   },
 ];
 
@@ -210,6 +224,11 @@ export default function SettingsScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Mon compte</Text>
             {DRIVER_ACCOUNT_ITEMS.map(renderMenuItem)}
+          </View>
+
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Mes activites</Text>
+            {DRIVER_ACTIVITY_ITEMS.map(renderMenuItem)}
           </View>
 
           <View style={styles.section}>

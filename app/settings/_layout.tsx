@@ -7,6 +7,7 @@ export default function SettingsLayout() {
       <Stack.Screen name="favorites" />
       <Stack.Screen name="orders" />
       <Stack.Screen name="transactions" />
+      <Stack.Screen name="payouts" />
       <Stack.Screen name="notifications" />
       <Stack.Screen name="faq" />
       <Stack.Screen name="legal" />

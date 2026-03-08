@@ -23,9 +23,16 @@ interface VendorPayout {
   status: PayoutStatus;
   order_id: string | null;
   booking_id: string | null;
+  recipient_type: string;
+  failure_reason: string | null;
   created_at: string;
   eligible_at: string | null;
   processed_at: string | null;
+  order: { order_number: string } | null;
+  booking: {
+    id: string;
+    service: { id: string; name: string } | null;
+  } | null;
 }
 
 interface Props {
@@ -49,7 +56,12 @@ export default function VendorEarningsScreen({ userId, userRole }: Props) {
 
       const { data: payoutData } = await supabase
         .from('pending_payouts')
-        .select('id, amount, status, order_id, booking_id, created_at, eligible_at, processed_at')
+        .select(`
+          id, amount, status, order_id, booking_id, recipient_type, failure_reason,
+          created_at, eligible_at, processed_at,
+          order:orders(order_number),
+          booking:service_bookings(id, service:services(id, name))
+        `)
         .eq('recipient_id', userId)
         .order('created_at', { ascending: false })
         .limit(200);
@@ -130,7 +142,11 @@ export default function VendorEarningsScreen({ userId, userRole }: Props) {
     else if (filterTab === 'paid') result = result.filter((p) => p.status === 'paid');
     if (searchQuery.trim()) {
       const q = searchQuery.toLowerCase().trim();
-      result = result.filter((p) => p.id.toLowerCase().includes(q));
+      result = result.filter((p) => {
+        const orderMatch = p.order?.order_number?.toLowerCase().includes(q);
+        const serviceMatch = p.booking?.service?.name?.toLowerCase().includes(q);
+        return orderMatch || serviceMatch || p.id.toLowerCase().includes(q);
+      });
     }
     return result;
   }, [sourcePayouts, filterTab, searchQuery]);
@@ -235,7 +251,7 @@ export default function VendorEarningsScreen({ userId, userRole }: Props) {
             <Search color="#999" size={18} />
             <TextInput
               style={styles.searchInput}
-              placeholder="Rechercher..."
+              placeholder="Rechercher par commande, service..."
               placeholderTextColor="#aaa"
               value={searchQuery}
               onChangeText={setSearchQuery}
@@ -272,27 +288,36 @@ export default function VendorEarningsScreen({ userId, userRole }: Props) {
               </Text>
             </View>
           ) : (
-            filteredPayouts.map((payout) => (
-              <View key={payout.id} style={styles.earningsCard}>
-                <View style={styles.earningsHeader}>
-                  <View>
-                    <Text style={styles.earningsType}>
-                      {payout.order_id ? 'Commande produit' : 'Prestation'}
-                    </Text>
-                    <Text style={styles.earningsDate}>{formatDate(payout.created_at)}</Text>
+            filteredPayouts.map((payout) => {
+              const title = payout.booking_id && payout.booking?.service?.name
+                ? payout.booking.service.name
+                : payout.order?.order_number
+                  ? `#${payout.order.order_number}`
+                  : payout.order_id ? 'Commande produit' : 'Prestation';
+              return (
+                <View key={payout.id} style={styles.earningsCard}>
+                  <View style={styles.earningsHeader}>
+                    <View>
+                      <Text style={styles.earningsType}>{title}</Text>
+                      <Text style={styles.earningsDate}>{formatDate(payout.created_at)}</Text>
+                    </View>
+                    <Text style={styles.earningsAmount}>{formatPrice(payout.amount)} FCFA</Text>
                   </View>
-                  <Text style={styles.earningsAmount}>{formatPrice(payout.amount)} FCFA</Text>
+                  <View style={styles.earningsFooter}>
+                    <PayoutBadge status={payout.status} />
+                    {payout.status === 'paid' && payout.processed_at ? (
+                      <Text style={styles.eligibleText}>
+                        Paye le {formatDate(payout.processed_at)}
+                      </Text>
+                    ) : payout.eligible_at ? (
+                      <Text style={styles.eligibleText}>
+                        Eligible le {formatDate(payout.eligible_at)}
+                      </Text>
+                    ) : null}
+                  </View>
                 </View>
-                <View style={styles.earningsFooter}>
-                  <PayoutBadge status={payout.status} />
-                  {payout.eligible_at && (
-                    <Text style={styles.eligibleText}>
-                      Eligible le {formatDate(payout.eligible_at)}
-                    </Text>
-                  )}
-                </View>
-              </View>
-            ))
+              );
+            })
           )}
         </View>
 

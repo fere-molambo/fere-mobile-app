@@ -8,23 +8,23 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import { RotateCcw, Clock, CheckCircle, Package, Briefcase, AlertCircle, RefreshCw } from 'lucide-react-native';
+import { Wallet, Clock, CheckCircle, Package, Briefcase, AlertCircle, RefreshCw } from 'lucide-react-native';
 import SettingsSubHeader from '@/components/SettingsSubHeader';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 
-interface Refund {
+interface PayoutItem {
   id: string;
+  amount: number;
+  recipient_type: string;
+  status: string;
   order_id: string | null;
   booking_id: string | null;
-  amount: number;
-  net_refund: number;
-  transaction_fee_deducted: number | null;
-  status: string;
-  refund_status: string;
-  failure_reason: string | null;
+  delivery_request_id: string | null;
   created_at: string;
+  eligible_at: string | null;
   processed_at: string | null;
+  failure_reason: string | null;
   order: { order_number: string } | null;
   booking: {
     id: string;
@@ -47,46 +47,40 @@ function formatDate(dateStr: string) {
   });
 }
 
-function getStatusConfig(refund: Refund) {
-  const s = refund.refund_status || refund.status;
+function getStatusConfig(status: string) {
   const map: Record<string, { label: string; color: string; bg: string }> = {
     pending: { label: 'En attente', color: '#e67e22', bg: '#fef3c7' },
     processing: { label: 'En cours', color: '#2563eb', bg: '#dbeafe' },
-    processed: { label: 'Rembourse', color: '#16a34a', bg: '#dcfce7' },
-    failed: { label: 'Echoue', color: '#dc2626', bg: '#fee2e2' },
+    paid: { label: 'Paye', color: '#16a34a', bg: '#dcfce7' },
   };
-  return map[s] || map.pending;
+  return map[status] || map.pending;
 }
 
-function isPending(refund: Refund) {
-  return refund.status === 'pending' || refund.refund_status === 'pending';
-}
-
-export default function RefundsScreen() {
+export default function PayoutsScreen() {
   const { user } = useAuth();
-  const [refunds, setRefunds] = useState<Refund[]>([]);
+  const [payouts, setPayouts] = useState<PayoutItem[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
   const [activeTab, setActiveTab] = useState<FilterTab>('pending');
 
-  const loadRefunds = useCallback(async () => {
+  const fetchPayouts = useCallback(async () => {
     if (!user) return;
     try {
       const { data, error } = await supabase
-        .from('refunds')
+        .from('pending_payouts')
         .select(`
-          id, order_id, booking_id, amount, net_refund, transaction_fee_deducted,
-          status, refund_status, failure_reason, created_at, processed_at,
+          id, amount, recipient_type, status, order_id, booking_id, delivery_request_id,
+          created_at, eligible_at, processed_at, failure_reason,
           order:orders(order_number),
           booking:service_bookings(id, service:services(id, name))
         `)
-        .eq('user_id', user.id)
+        .eq('recipient_id', user.id)
         .order('created_at', { ascending: false });
 
       if (error) throw error;
-      setRefunds((data as any) || []);
+      setPayouts((data as any) || []);
     } catch (err) {
-      console.error('Error loading refunds:', err);
+      console.error('Error loading payouts:', err);
     } finally {
       setLoading(false);
       setRefreshing(false);
@@ -94,49 +88,64 @@ export default function RefundsScreen() {
   }, [user]);
 
   useEffect(() => {
-    loadRefunds();
-  }, [loadRefunds]);
+    fetchPayouts();
+  }, [fetchPayouts]);
 
   useEffect(() => {
     if (!user) return;
     const channel = supabase
-      .channel(`client-refunds-${user.id}`)
+      .channel(`user-payouts-${user.id}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',
-        table: 'refunds',
-        filter: `user_id=eq.${user.id}`,
+        table: 'pending_payouts',
+        filter: `recipient_id=eq.${user.id}`,
       }, () => {
-        loadRefunds();
+        fetchPayouts();
       })
       .subscribe();
 
     return () => {
       supabase.removeChannel(channel);
     };
-  }, [user, loadRefunds]);
+  }, [user, fetchPayouts]);
 
   const onRefresh = useCallback(() => {
     setRefreshing(true);
-    loadRefunds();
-  }, [loadRefunds]);
+    fetchPayouts();
+  }, [fetchPayouts]);
 
-  const pendingRefunds = refunds.filter(isPending);
-  const processedRefunds = refunds.filter((r) => !isPending(r));
-  const displayedRefunds = activeTab === 'pending' ? pendingRefunds : processedRefunds;
+  const pendingPayouts = payouts.filter((p) => p.status === 'pending');
+  const processedPayouts = payouts.filter((p) => p.status !== 'pending');
+  const displayedPayouts = activeTab === 'pending' ? pendingPayouts : processedPayouts;
 
-  const getRefundTitle = (refund: Refund) => {
-    if (refund.booking_id && refund.booking?.service?.name) {
-      return refund.booking.service.name;
+  const getPayoutTitle = (payout: PayoutItem) => {
+    if (payout.booking_id && payout.booking?.service?.name) {
+      return payout.booking.service.name;
     }
-    return refund.order?.order_number || 'Commande';
+    if (payout.order_id && payout.order?.order_number) {
+      return `#${payout.order.order_number}`;
+    }
+    if (payout.delivery_request_id) {
+      return 'Livraison';
+    }
+    return 'Versement';
   };
 
-  const isBookingRefund = (refund: Refund) => !!refund.booking_id;
+  const getPayoutIcon = (payout: PayoutItem) => {
+    if (payout.booking_id) return <Briefcase color="#003f2f" size={18} />;
+    return <Package color="#003f2f" size={18} />;
+  };
+
+  const getRecipientLabel = (type: string) => {
+    if (type === 'vendor') return 'Vendeur';
+    if (type === 'driver') return 'Livreur';
+    return type;
+  };
 
   return (
     <View style={styles.container}>
-      <SettingsSubHeader title="Remboursements" />
+      <SettingsSubHeader title="Mes versements" />
 
       <View style={styles.tabs}>
         <TouchableOpacity
@@ -145,7 +154,7 @@ export default function RefundsScreen() {
         >
           <Clock color={activeTab === 'pending' ? '#003f2f' : '#999'} size={16} />
           <Text style={[styles.tabText, activeTab === 'pending' && styles.tabTextActive]}>
-            En attente ({pendingRefunds.length})
+            En attente ({pendingPayouts.length})
           </Text>
         </TouchableOpacity>
         <TouchableOpacity
@@ -154,7 +163,7 @@ export default function RefundsScreen() {
         >
           <CheckCircle color={activeTab === 'processed' ? '#003f2f' : '#999'} size={16} />
           <Text style={[styles.tabText, activeTab === 'processed' && styles.tabTextActive]}>
-            Traites ({processedRefunds.length})
+            Traites ({processedPayouts.length})
           </Text>
         </TouchableOpacity>
       </View>
@@ -163,7 +172,7 @@ export default function RefundsScreen() {
         <View style={styles.loadingContainer}>
           <ActivityIndicator size="large" color="#003f2f" />
         </View>
-      ) : displayedRefunds.length === 0 ? (
+      ) : displayedPayouts.length === 0 ? (
         <ScrollView
           contentContainerStyle={styles.emptyScrollContent}
           refreshControl={
@@ -172,15 +181,15 @@ export default function RefundsScreen() {
         >
           <View style={styles.emptyState}>
             <View style={styles.emptyIcon}>
-              <RotateCcw color="#003f2f" size={36} strokeWidth={1.5} />
+              <Wallet color="#003f2f" size={36} strokeWidth={1.5} />
             </View>
             <Text style={styles.emptyTitle}>
               {activeTab === 'pending'
-                ? 'Aucun remboursement en attente'
-                : 'Aucun remboursement traite'}
+                ? 'Aucun versement en attente'
+                : 'Aucun versement traite'}
             </Text>
             <Text style={styles.emptySubtitle}>
-              Les remboursements lies aux commandes et prestations annulees apparaitront ici.
+              Vos versements apparaitront ici.
             </Text>
           </View>
           <TouchableOpacity style={styles.manualRefreshBtn} onPress={onRefresh}>
@@ -201,21 +210,17 @@ export default function RefundsScreen() {
             <Text style={styles.manualRefreshText}>Actualiser</Text>
           </TouchableOpacity>
 
-          {displayedRefunds.map((refund) => {
-            const statusCfg = getStatusConfig(refund);
+          {displayedPayouts.map((payout) => {
+            const statusCfg = getStatusConfig(payout.status);
             return (
-              <View key={refund.id} style={styles.card}>
+              <View key={payout.id} style={styles.card}>
                 <View style={styles.cardHeader}>
                   <View style={styles.cardIconContainer}>
-                    {isBookingRefund(refund) ? (
-                      <Briefcase color="#003f2f" size={18} />
-                    ) : (
-                      <Package color="#003f2f" size={18} />
-                    )}
+                    {getPayoutIcon(payout)}
                   </View>
                   <View style={styles.cardInfo}>
-                    <Text style={styles.cardOrderNumber}>{getRefundTitle(refund)}</Text>
-                    <Text style={styles.cardDate}>{formatDate(refund.created_at)}</Text>
+                    <Text style={styles.cardTitle}>{getPayoutTitle(payout)}</Text>
+                    <Text style={styles.cardDate}>{formatDate(payout.created_at)}</Text>
                   </View>
                   <View style={[styles.statusBadge, { backgroundColor: statusCfg.bg }]}>
                     <Text style={[styles.statusText, { color: statusCfg.color }]}>
@@ -226,35 +231,37 @@ export default function RefundsScreen() {
 
                 <View style={styles.cardBody}>
                   <View style={styles.amountRow}>
-                    <Text style={styles.amountLabel}>Montant initial</Text>
-                    <Text style={styles.amountValue}>{formatPrice(refund.amount)} FCFA</Text>
+                    <Text style={styles.amountLabel}>Montant</Text>
+                    <Text style={styles.amountValue}>{formatPrice(payout.amount)} FCFA</Text>
                   </View>
-                  {refund.transaction_fee_deducted != null && refund.transaction_fee_deducted > 0 && (
-                    <View style={styles.amountRow}>
-                      <Text style={styles.amountLabel}>Frais conserves</Text>
-                      <Text style={[styles.amountValue, { color: '#d97706' }]}>
-                        -{formatPrice(refund.transaction_fee_deducted)} FCFA
+
+                  <View style={styles.amountRow}>
+                    <Text style={styles.amountLabel}>Type</Text>
+                    <View style={styles.typeBadge}>
+                      <Text style={styles.typeBadgeText}>
+                        {getRecipientLabel(payout.recipient_type)}
                       </Text>
                     </View>
-                  )}
-                  {refund.net_refund > 0 && refund.net_refund !== refund.amount && (
+                  </View>
+
+                  {payout.eligible_at && (
                     <View style={styles.amountRow}>
-                      <Text style={styles.amountLabel}>Montant rembourse</Text>
-                      <Text style={[styles.amountValue, { color: '#16a34a' }]}>
-                        {formatPrice(refund.net_refund)} FCFA
-                      </Text>
+                      <Text style={styles.amountLabel}>Eligible le</Text>
+                      <Text style={styles.amountDate}>{formatDate(payout.eligible_at)}</Text>
                     </View>
                   )}
-                  {refund.processed_at && (
+
+                  {payout.processed_at && (
                     <View style={styles.amountRow}>
                       <Text style={styles.amountLabel}>Traite le</Text>
-                      <Text style={styles.amountDate}>{formatDate(refund.processed_at)}</Text>
+                      <Text style={styles.amountDate}>{formatDate(payout.processed_at)}</Text>
                     </View>
                   )}
-                  {refund.failure_reason && (
+
+                  {payout.failure_reason && (
                     <View style={styles.failureRow}>
                       <AlertCircle color="#dc2626" size={14} />
-                      <Text style={styles.failureText}>{refund.failure_reason}</Text>
+                      <Text style={styles.failureText}>{payout.failure_reason}</Text>
                     </View>
                   )}
                 </View>
@@ -382,7 +389,7 @@ const styles = StyleSheet.create({
   cardInfo: {
     flex: 1,
   },
-  cardOrderNumber: {
+  cardTitle: {
     fontSize: 14,
     fontWeight: '700',
     color: '#1a1a1a',
@@ -417,11 +424,22 @@ const styles = StyleSheet.create({
   amountValue: {
     fontSize: 14,
     fontWeight: '700',
-    color: '#1a1a1a',
+    color: '#065f46',
   },
   amountDate: {
     fontSize: 13,
     color: '#888',
+  },
+  typeBadge: {
+    backgroundColor: '#f0f0f0',
+    paddingHorizontal: 8,
+    paddingVertical: 2,
+    borderRadius: 6,
+  },
+  typeBadgeText: {
+    fontSize: 11,
+    fontWeight: '600',
+    color: '#666',
   },
   failureRow: {
     flexDirection: 'row',
