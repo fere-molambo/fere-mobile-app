@@ -1,17 +1,6 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import {
-  User,
-  Heart,
-  Package,
-  RotateCcw,
-  Wallet,
-  Bell,
-  HelpCircle,
-  Scale,
-  ChevronRight,
-  LogOut,
-} from 'lucide-react-native';
+import { User, Heart, Package, RotateCcw, Wallet, Bell, Circle as HelpCircle, Scale, ChevronRight, LogOut } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import AppHeader from '@/components/AppHeader';
 import { useAuth } from '@/contexts/AuthContext';

@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import { Wallet, Clock, CheckCircle, Package, Briefcase, AlertCircle, RefreshCw } from 'lucide-react-native';
+import { Wallet, Clock, CircleCheck as CheckCircle, Package, Briefcase, CircleAlert as AlertCircle, RefreshCw } from 'lucide-react-native';
 import SettingsSubHeader from '@/components/SettingsSubHeader';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';

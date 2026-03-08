@@ -3,10 +3,7 @@ import {
   View, Text, StyleSheet, ScrollView, RefreshControl, TouchableOpacity,
   ActivityIndicator, TextInput,
 } from 'react-native';
-import {
-  Search, XCircle, Wallet, TrendingUp, Clock, CircleCheck as CheckCircle,
-  Calendar,
-} from 'lucide-react-native';
+import { Search, Circle as XCircle, Wallet, TrendingUp, Clock, CircleCheck as CheckCircle, Calendar } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { resolveVendorShopIds, getVendorServiceIds } from '@/lib/vendorUtils';
 import { formatPrice } from '@/lib/bookingUtils';

@@ -9,7 +9,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import { Search, XCircle, Wallet, TrendingUp, Clock, CircleCheck as CheckCircle } from 'lucide-react-native';
+import { Search, Circle as XCircle, Wallet, TrendingUp, Clock, CircleCheck as CheckCircle } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { DeliveryRequest, PendingPayout } from '@/types/database';
 import { formatDate, formatEarnings } from '@/lib/driverUtils';
