@@ -13,7 +13,7 @@ const ORANGE_MONEY_AUTH_HEADER = Deno.env.get("ORANGE_MONEY_AUTH_HEADER") || "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
 
-const OM_TOKEN_URL = "https://api.orange.com/oauth/v1/token";
+const OM_TOKEN_URL = "https://api.orange.com/oauth/v3/token";
 const OM_WEBPAYMENT_URL = "https://api.orange.com/orange-money-webpay/dev/v1/webpayment";
 const OM_TRANSACTION_STATUS_URL = "https://api.orange.com/orange-money-webpay/dev/v1/transactionstatus";
 
