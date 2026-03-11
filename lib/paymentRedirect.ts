@@ -10,6 +10,7 @@ interface PendingPaymentParams {
   orderId?: string;
   completionType?: string;
   checkoutData?: any;
+  payToken?: string;
 }
 
 export function getPaymentCallbackUrl(): string {
@@ -20,6 +21,11 @@ export function getPaymentCallbackUrl(): string {
 }
 
 export async function savePendingPayment(params: PendingPaymentParams) {
+  const checkoutData = params.checkoutData || null;
+  if (params.payToken && checkoutData) {
+    checkoutData.pay_token = params.payToken;
+  }
+
   const { error } = await supabase.from('pending_payments').insert({
     user_id: params.userId,
     reference: params.reference,
@@ -28,13 +34,15 @@ export async function savePendingPayment(params: PendingPaymentParams) {
     booking_id: params.bookingId || null,
     order_id: params.orderId || null,
     completion_type: params.completionType || null,
-    checkout_data: params.checkoutData || null,
+    checkout_data: params.payToken && !checkoutData
+      ? { pay_token: params.payToken }
+      : checkoutData,
   });
   if (error) throw error;
 }
 
-export function redirectToPaystack(authorizationUrl: string) {
+export function redirectToPayment(paymentUrl: string) {
   if (Platform.OS === 'web' && typeof window !== 'undefined') {
-    window.location.href = authorizationUrl;
+    window.location.href = paymentUrl;
   }
 }

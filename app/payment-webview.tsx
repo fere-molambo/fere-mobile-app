@@ -22,6 +22,7 @@ export default function PaymentWebViewScreen() {
   const bookingId = params.bookingId as string;
   const orderId = params.orderId as string;
   const amount = params.amount as string;
+  const payToken = params.payToken as string;
 
   const [loading, setLoading] = useState(true);
   const [verifying, setVerifying] = useState(false);
@@ -31,8 +32,8 @@ export default function PaymentWebViewScreen() {
   const handleNavigationChange = async (navState: any) => {
     const currentUrl = navState.url || '';
     if (
-      currentUrl.includes('callback') ||
-      currentUrl.includes('trxref') ||
+      currentUrl.includes('payment-callback') ||
+      currentUrl.includes('return') ||
       currentUrl.includes('reference=')
     ) {
       await verifyAndComplete();
@@ -50,14 +51,18 @@ export default function PaymentWebViewScreen() {
 
     try {
       const resp = await fetch(
-        `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/paystack-payment`,
+        `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/orange-money-payment`,
         {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
             'Authorization': `Bearer ${process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY}`,
           },
-          body: JSON.stringify({ action: 'complete_payment', reference }),
+          body: JSON.stringify({
+            action: 'complete_payment',
+            reference,
+            pay_token: payToken,
+          }),
         }
       );
 
@@ -115,7 +120,7 @@ export default function PaymentWebViewScreen() {
       setVerifying(false);
       setVerifyError(err?.message || 'Une erreur est survenue lors de la verification');
     }
-  }, [reference, paymentMode, bookingId, orderId, amount]);
+  }, [reference, payToken, paymentMode, bookingId, orderId, amount]);
 
   const handleCancel = async () => {
     router.back();

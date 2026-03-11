@@ -29,7 +29,7 @@ import {
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { startConversation } from '@/lib/chatUtils';
-import { savePendingPayment, getPaymentCallbackUrl, redirectToPaystack } from '@/lib/paymentRedirect';
+import { savePendingPayment, getPaymentCallbackUrl, redirectToPayment } from '@/lib/paymentRedirect';
 import {
   OrderDetail,
   DeliveryRequest,
@@ -323,7 +323,7 @@ export default function OrderDetailScreen() {
       const callbackUrl = isWeb ? getPaymentCallbackUrl() : undefined;
 
       const resp = await fetch(
-        `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/paystack-payment`,
+        `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/orange-money-payment`,
         {
           method: 'POST',
           headers: {
@@ -332,23 +332,22 @@ export default function OrderDetailScreen() {
           },
           body: JSON.stringify({
             action: 'initialize',
-            email: user.email,
             amount: order.balance_amount,
             reference: balanceRef,
-            currency: 'XOF',
             metadata: {
               payment_type: 'order_balance',
               order_id: order.id,
               user_id: user.id,
             },
-            ...(callbackUrl ? { callback_url: callbackUrl } : {}),
+            return_url: callbackUrl || undefined,
+            cancel_url: callbackUrl || undefined,
           }),
         }
       );
 
       const result = await resp.json();
 
-      if (result.authorization_url) {
+      if (result.payment_url) {
         const effectiveRef = result.reference || balanceRef;
 
         await savePendingPayment({
@@ -357,21 +356,23 @@ export default function OrderDetailScreen() {
           paymentMode: 'balance',
           amount: order.balance_amount,
           orderId: order.id,
+          payToken: result.pay_token,
         });
 
         if (isWeb) {
-          redirectToPaystack(result.authorization_url);
+          redirectToPayment(result.payment_url);
           return;
         }
 
         router.push({
           pathname: '/payment-webview',
           params: {
-            url: result.authorization_url,
+            url: result.payment_url,
             reference: effectiveRef,
             amount: String(order.balance_amount),
             paymentMode: 'balance',
             orderId: order.id,
+            payToken: result.pay_token,
           },
         });
       } else {

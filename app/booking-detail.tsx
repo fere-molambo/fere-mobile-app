@@ -35,7 +35,7 @@ import {
   formatPrice,
 } from '@/lib/bookingUtils';
 import { generateOrderNumber } from '@/lib/orderCalculations';
-import { savePendingPayment, getPaymentCallbackUrl, redirectToPaystack } from '@/lib/paymentRedirect';
+import { savePendingPayment, getPaymentCallbackUrl, redirectToPayment } from '@/lib/paymentRedirect';
 import type { ServiceBooking, BookingStatus, BookingPaymentStatus } from '@/types/database';
 import TrackingMap from '@/components/tracking/TrackingMap';
 
@@ -180,8 +180,8 @@ export default function BookingDetailScreen() {
       const isWeb = Platform.OS === 'web';
       const callbackUrl = isWeb ? getPaymentCallbackUrl() : undefined;
 
-      const paystackResp = await fetch(
-        `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/paystack-payment`,
+      const omResp = await fetch(
+        `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/orange-money-payment`,
         {
           method: 'POST',
           headers: {
@@ -190,28 +190,27 @@ export default function BookingDetailScreen() {
           },
           body: JSON.stringify({
             action: 'initialize',
-            email: user.email,
             amount: payAmount,
             reference: paymentReference,
-            currency: 'XOF',
             metadata: {
               booking_id: booking.id,
               payment_type: 'service_booking_balance',
               completion_type: completionType,
               user_id: user.id,
             },
-            ...(callbackUrl ? { callback_url: callbackUrl } : {}),
+            return_url: callbackUrl || undefined,
+            cancel_url: callbackUrl || undefined,
           }),
         }
       );
 
-      const paystackResult = await paystackResp.json();
+      const omResult = await omResp.json();
 
-      if (!paystackResult.authorization_url) {
-        throw new Error(paystackResult.message || paystackResult.error || 'Impossible de lancer le paiement');
+      if (!omResult.payment_url) {
+        throw new Error(omResult.error || 'Impossible de lancer le paiement');
       }
 
-      const effectiveRef = paystackResult.reference || paymentReference;
+      const effectiveRef = omResult.reference || paymentReference;
 
       await savePendingPayment({
         userId: user.id,
@@ -220,21 +219,23 @@ export default function BookingDetailScreen() {
         amount: payAmount,
         bookingId: booking.id,
         completionType,
+        payToken: omResult.pay_token,
       });
 
       if (isWeb) {
-        redirectToPaystack(paystackResult.authorization_url);
+        redirectToPayment(omResult.payment_url);
         return;
       }
 
       router.push({
         pathname: '/payment-webview',
         params: {
-          url: paystackResult.authorization_url,
+          url: omResult.payment_url,
           reference: effectiveRef,
           paymentMode: 'service_booking_balance',
           bookingId: booking.id,
           amount: String(payAmount),
+          payToken: omResult.pay_token,
         },
       });
     } catch (err: any) {

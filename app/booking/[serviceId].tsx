@@ -38,7 +38,7 @@ import {
   type DayAvailability,
   type BookingPriceBreakdown,
 } from '@/lib/bookingUtils';
-import { savePendingPayment, getPaymentCallbackUrl, redirectToPaystack } from '@/lib/paymentRedirect';
+import { savePendingPayment, getPaymentCallbackUrl, redirectToPayment } from '@/lib/paymentRedirect';
 import { sendNotificationToUser } from '@/lib/notificationService';
 
 export default function BookingScreen() {
@@ -210,7 +210,7 @@ export default function BookingScreen() {
           tva_amount: priceBreakdown.tvaAmount,
           delivery_address_id: selectedAddressId,
           notes: notes || null,
-          payment_method: 'paystack',
+          payment_method: 'orange_money',
           payment_status: 'pending',
           ...(service.price_type === 'negoce' && proposedPrice
             ? { partial_payment_amount: proposedPrice }
@@ -235,10 +235,10 @@ export default function BookingScreen() {
         const isWeb = Platform.OS === 'web';
         const callbackUrl = isWeb ? getPaymentCallbackUrl() : undefined;
 
-        let paystackResult: any;
+        let omResult: any;
         try {
-          const paystackResp = await fetch(
-            `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/paystack-payment`,
+          const omResp = await fetch(
+            `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/orange-money-payment`,
             {
               method: 'POST',
               headers: {
@@ -247,20 +247,19 @@ export default function BookingScreen() {
               },
               body: JSON.stringify({
                 action: 'initialize',
-                email: user.email,
                 amount: priceBreakdown.travelFee,
                 reference: paymentReference,
-                currency: 'XOF',
                 metadata: {
                   booking_id: booking.id,
                   payment_type: 'service_booking_advance',
                   user_id: user.id,
                 },
-                ...(callbackUrl ? { callback_url: callbackUrl } : {}),
+                return_url: callbackUrl || undefined,
+                cancel_url: callbackUrl || undefined,
               }),
             }
           );
-          paystackResult = await paystackResp.json();
+          omResult = await omResp.json();
         } catch (payErr: any) {
           await supabase
             .from('service_bookings')
@@ -269,15 +268,15 @@ export default function BookingScreen() {
           throw new Error('Erreur reseau lors de l\'initialisation du paiement. Aucune reservation n\'a ete conservee.');
         }
 
-        if (!paystackResult.authorization_url) {
+        if (!omResult.payment_url) {
           await supabase
             .from('service_bookings')
             .update({ status: 'cancelled', payment_status: 'cancelled' })
             .eq('id', booking.id);
-          throw new Error(paystackResult.message || paystackResult.error || 'Impossible de lancer le paiement');
+          throw new Error(omResult.error || 'Impossible de lancer le paiement');
         }
 
-        const effectiveRef = paystackResult.reference || paymentReference;
+        const effectiveRef = omResult.reference || paymentReference;
 
         await savePendingPayment({
           userId: user.id,
@@ -285,21 +284,23 @@ export default function BookingScreen() {
           paymentMode: 'service_booking_advance',
           amount: priceBreakdown.travelFee,
           bookingId: booking.id,
+          payToken: omResult.pay_token,
         });
 
         if (isWeb) {
-          redirectToPaystack(paystackResult.authorization_url);
+          redirectToPayment(omResult.payment_url);
           return;
         }
 
         router.push({
           pathname: '/payment-webview',
           params: {
-            url: paystackResult.authorization_url,
+            url: omResult.payment_url,
             reference: effectiveRef,
             paymentMode: 'service_booking_advance',
             bookingId: booking.id,
             amount: String(priceBreakdown.travelFee),
+            payToken: omResult.pay_token,
           },
         });
       } else {

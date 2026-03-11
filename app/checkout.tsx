@@ -27,7 +27,7 @@ import {
   type ShopOrder,
   type CheckoutSummary,
 } from '@/lib/orderCalculations';
-import { savePendingPayment, getPaymentCallbackUrl, redirectToPaystack } from '@/lib/paymentRedirect';
+import { savePendingPayment, getPaymentCallbackUrl, redirectToPayment } from '@/lib/paymentRedirect';
 
 function formatPrice(n: number) {
   return n.toLocaleString('fr-FR').replace(/\s/g, ' ');
@@ -230,8 +230,8 @@ export default function CheckoutScreen() {
       const isWeb = Platform.OS === 'web';
       const callbackUrl = isWeb ? getPaymentCallbackUrl() : undefined;
 
-      const paystackResp = await fetch(
-        `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/paystack-payment`,
+      const omResp = await fetch(
+        `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/orange-money-payment`,
         {
           method: 'POST',
           headers: {
@@ -240,24 +240,23 @@ export default function CheckoutScreen() {
           },
           body: JSON.stringify({
             action: 'initialize',
-            email: user.email,
             amount: summary.advanceAmount,
             reference: paymentReference,
-            currency: 'XOF',
             metadata: {
               payment_group_id: paymentGroupId,
               user_id: user.id,
               payment_type: 'order',
             },
-            ...(callbackUrl ? { callback_url: callbackUrl } : {}),
+            return_url: callbackUrl || undefined,
+            cancel_url: callbackUrl || undefined,
           }),
         }
       );
 
-      const paystackResult = await paystackResp.json();
+      const omResult = await omResp.json();
 
-      if (!paystackResult.authorization_url) {
-        throw new Error(paystackResult.message || 'Erreur de paiement');
+      if (!omResult.payment_url) {
+        throw new Error(omResult.error || 'Erreur de paiement');
       }
 
       const deliveryAddr = addresses.find((a) => a.id === selectedAddressId);
@@ -317,7 +316,7 @@ export default function CheckoutScreen() {
         },
       };
 
-      const effectiveRef = paystackResult.reference || paymentReference;
+      const effectiveRef = omResult.reference || paymentReference;
 
       await savePendingPayment({
         userId: user.id,
@@ -325,19 +324,21 @@ export default function CheckoutScreen() {
         paymentMode: 'checkout',
         amount: summary.advanceAmount,
         checkoutData: checkoutSnapshot,
+        payToken: omResult.pay_token,
       });
 
       if (isWeb) {
-        redirectToPaystack(paystackResult.authorization_url);
+        redirectToPayment(omResult.payment_url);
         return;
       }
 
       router.push({
         pathname: '/payment-webview',
         params: {
-          url: paystackResult.authorization_url,
+          url: omResult.payment_url,
           reference: effectiveRef,
           amount: summary.advanceAmount.toString(),
+          payToken: omResult.pay_token,
         },
       });
     } catch (err: any) {

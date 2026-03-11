@@ -16,7 +16,7 @@ export default function PaymentCallbackScreen() {
   const { clearCart } = useCart();
   const processedRef = useRef(false);
 
-  const rawRef = params.trxref || params.reference || '';
+  const rawRef = params.reference || params.trxref || '';
   const reference = Array.isArray(rawRef) ? rawRef[0] : (rawRef as string);
 
   const [status, setStatus] = useState<'loading' | 'success' | 'failed' | 'not_found'>('loading');
@@ -36,7 +36,7 @@ export default function PaymentCallbackScreen() {
 
     try {
       const resp = await fetch(
-        `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/paystack-payment`,
+        `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/orange-money-payment`,
         {
           method: 'POST',
           headers: {
