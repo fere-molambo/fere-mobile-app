@@ -11,21 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
-import {
-  X,
-  Clock,
-  CheckCircle,
-  Truck,
-  MapPin,
-  Package,
-  XCircle,
-  ChevronLeft,
-  Send,
-  ShieldCheck,
-  Paperclip,
-  Info,
-  MessageCircle,
-} from 'lucide-react-native';
+import { X, Clock, CircleCheck as CheckCircle, Truck, MapPin, Package, Circle as XCircle, ChevronLeft, Send, ShieldCheck, Paperclip, Info, MessageCircle } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { startConversation } from '@/lib/chatUtils';

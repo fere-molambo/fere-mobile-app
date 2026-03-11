@@ -1,7 +1,7 @@
 import React, { useState, useRef, useCallback } from 'react';
 import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Platform } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
-import { X, AlertTriangle } from 'lucide-react-native';
+import { X, TriangleAlert as AlertTriangle } from 'lucide-react-native';
 import { useCart } from '@/contexts/CartContext';
 
 let WebView: any = null;

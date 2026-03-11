@@ -11,17 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
-import {
-  ArrowLeft,
-  MapPin,
-  Phone,
-  MessageCircle,
-  CheckCircle,
-  XCircle,
-  Truck,
-  AlertTriangle,
-  Calendar,
-} from 'lucide-react-native';
+import { ArrowLeft, MapPin, Phone, MessageCircle, CircleCheck as CheckCircle, Circle as XCircle, Truck, TriangleAlert as AlertTriangle, Calendar } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import BookingStatusBadge from '@/components/BookingStatusBadge';

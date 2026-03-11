@@ -11,18 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
-import {
-  ArrowLeft,
-  Calendar,
-  Clock,
-  MapPin,
-  Plus,
-  ChevronLeft,
-  ChevronRight,
-  AlertTriangle,
-  Truck,
-  Info,
-} from 'lucide-react-native';
+import { ArrowLeft, Calendar, Clock, MapPin, Plus, ChevronLeft, ChevronRight, TriangleAlert as AlertTriangle, Truck, Info } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import AddressModal from '@/components/modals/AddressModal';

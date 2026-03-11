@@ -11,7 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
-import { ArrowLeft, Plus, MapPin, Phone, AlertTriangle, Info, Store, Package, Truck } from 'lucide-react-native';
+import { ArrowLeft, Plus, MapPin, Phone, TriangleAlert as AlertTriangle, Info, Store, Package, Truck } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
