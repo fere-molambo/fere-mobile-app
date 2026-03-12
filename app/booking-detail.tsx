@@ -168,7 +168,7 @@ export default function BookingDetailScreen() {
 
       const paymentReference = generateOrderNumber();
       const isWeb = Platform.OS === 'web';
-      const callbackUrl = isWeb ? getPaymentCallbackUrl() : undefined;
+      const callbackUrl = isWeb ? getPaymentCallbackUrl(paymentReference) : undefined;
 
       const omResp = await fetch(
         `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/orange-money-payment`,

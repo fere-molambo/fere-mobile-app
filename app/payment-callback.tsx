@@ -5,10 +5,26 @@ import {
   StyleSheet,
   ActivityIndicator,
   TouchableOpacity,
+  Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { CircleCheck, CircleX, RefreshCw, ArrowLeft } from 'lucide-react-native';
 import { useCart } from '@/contexts/CartContext';
+
+function extractReference(params: Record<string, any>): string {
+  const fromParams = params.reference || params.trxref || '';
+  const ref = Array.isArray(fromParams) ? fromParams[0] : (fromParams as string);
+  if (ref) return ref;
+
+  if (Platform.OS === 'web' && typeof window !== 'undefined') {
+    const url = new URL(window.location.href);
+    return url.searchParams.get('reference') || url.searchParams.get('trxref') || '';
+  }
+  return '';
+}
+
+const MAX_RETRIES = 4;
+const RETRY_DELAYS = [0, 3000, 5000, 8000];
 
 export default function PaymentCallbackScreen() {
   const params = useLocalSearchParams();
@@ -16,73 +32,91 @@ export default function PaymentCallbackScreen() {
   const { clearCart } = useCart();
   const processedRef = useRef(false);
 
-  const rawRef = params.reference || params.trxref || '';
-  const reference = Array.isArray(rawRef) ? rawRef[0] : (rawRef as string);
+  const reference = extractReference(params);
 
   const [status, setStatus] = useState<'loading' | 'success' | 'failed' | 'not_found'>('loading');
   const [errorMessage, setErrorMessage] = useState('');
   const [completedMode, setCompletedMode] = useState<string | null>(null);
   const [completedBookingId, setCompletedBookingId] = useState<string | null>(null);
+  const [retryCount, setRetryCount] = useState(0);
 
   useEffect(() => {
     if (!reference || processedRef.current) return;
     processedRef.current = true;
-    processPayment();
+    processPaymentWithRetries();
   }, [reference]);
 
-  const processPayment = async () => {
+  const callCompletePayment = async (): Promise<any> => {
+    const resp = await fetch(
+      `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/orange-money-payment`,
+      {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY}`,
+        },
+        body: JSON.stringify({ action: 'complete_payment', reference }),
+      }
+    );
+    return resp.json();
+  };
+
+  const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));
+
+  const processPaymentWithRetries = async () => {
     setStatus('loading');
     setErrorMessage('');
 
-    try {
-      const resp = await fetch(
-        `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/orange-money-payment`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY}`,
-          },
-          body: JSON.stringify({ action: 'complete_payment', reference }),
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      setRetryCount(attempt);
+
+      if (RETRY_DELAYS[attempt] > 0) {
+        await delay(RETRY_DELAYS[attempt]);
+      }
+
+      try {
+        const result = await callCompletePayment();
+
+        if (result.error) {
+          setStatus('not_found');
+          setErrorMessage(result.error);
+          return;
         }
-      );
 
-      const result = await resp.json();
-
-      if (result.error) {
-        setStatus('not_found');
-        setErrorMessage(result.error);
-        return;
-      }
-
-      if (!result.success) {
-        const normalized = ['failed', 'abandoned'].includes(result.status)
-          ? result.status
-          : 'error';
-
-        if (normalized === 'failed') {
-          setErrorMessage('Le paiement n\'a pas abouti. Veuillez reessayer.');
-        } else if (normalized === 'abandoned') {
-          setErrorMessage('Le paiement a ete abandonne. Vous pouvez reessayer.');
-        } else {
-          setErrorMessage('Statut de paiement inconnu. Veuillez verifier dans vos reservations ou commandes.');
+        if (result.success) {
+          if (result.payment_mode === 'checkout') {
+            clearCart();
+          }
+          setCompletedMode(result.payment_mode);
+          if (result.booking_id) setCompletedBookingId(result.booking_id);
+          setStatus('success');
+          return;
         }
-        setStatus('failed');
-        setCompletedMode(result.payment_mode);
-        if (result.booking_id) setCompletedBookingId(result.booking_id);
-        return;
-      }
 
-      if (result.payment_mode === 'checkout') {
-        clearCart();
-      }
+        if (attempt === MAX_RETRIES - 1) {
+          const normalized = ['failed', 'abandoned'].includes(result.status)
+            ? result.status
+            : 'error';
 
-      setCompletedMode(result.payment_mode);
-      if (result.booking_id) setCompletedBookingId(result.booking_id);
-      setStatus('success');
-    } catch (err: any) {
-      setErrorMessage(err.message || 'Une erreur est survenue.');
-      setStatus('failed');
+          if (normalized === 'failed') {
+            setErrorMessage('Le paiement n\'a pas abouti. Veuillez reessayer.');
+          } else if (normalized === 'abandoned') {
+            setErrorMessage('Le paiement a ete abandonne. Vous pouvez reessayer.');
+          } else {
+            setErrorMessage('Statut de paiement inconnu. Veuillez verifier dans vos reservations ou commandes.');
+          }
+          setStatus('failed');
+          setCompletedMode(result.payment_mode);
+          if (result.booking_id) setCompletedBookingId(result.booking_id);
+          return;
+        }
+      } catch (err: any) {
+        if (attempt === MAX_RETRIES - 1) {
+          setErrorMessage(err.message || 'Une erreur est survenue.');
+          setStatus('failed');
+          return;
+        }
+      }
     }
   };
 
@@ -106,7 +140,7 @@ export default function PaymentCallbackScreen() {
 
   const handleRetry = () => {
     processedRef.current = false;
-    processPayment();
+    processPaymentWithRetries();
   };
 
   if (status === 'loading') {
@@ -116,7 +150,11 @@ export default function PaymentCallbackScreen() {
         <View style={styles.centerContent}>
           <ActivityIndicator size="large" color="#003f2f" />
           <Text style={styles.loadingTitle}>Verification du paiement...</Text>
-          <Text style={styles.loadingSubtitle}>Veuillez patienter, ne fermez pas cette page</Text>
+          <Text style={styles.loadingSubtitle}>
+            {retryCount > 0
+              ? `Tentative ${retryCount + 1}/${MAX_RETRIES} - Veuillez patienter...`
+              : 'Veuillez patienter, ne fermez pas cette page'}
+          </Text>
         </View>
       </View>
     );

@@ -306,7 +306,7 @@ export default function OrderDetailScreen() {
     try {
       const balanceRef = `BAL_${order.id.substring(0, 8)}_${Date.now()}`;
       const isWeb = Platform.OS === 'web';
-      const callbackUrl = isWeb ? getPaymentCallbackUrl() : undefined;
+      const callbackUrl = isWeb ? getPaymentCallbackUrl(balanceRef) : undefined;
 
       const resp = await fetch(
         `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/orange-money-payment`,

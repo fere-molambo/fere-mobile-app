@@ -505,14 +505,29 @@ Deno.serve(async (req: Request) => {
       const storedAmount = Number(pending.amount);
 
       let isSuccess = false;
+      let lastStatus = "UNKNOWN";
 
       if (storedPayToken) {
-        try {
-          const token = await getOAuthToken();
-          const statusResult = await checkTransactionStatus(token, reference, storedAmount, storedPayToken);
-          isSuccess = statusResult.status === "SUCCESS";
-        } catch {
-          isSuccess = false;
+        const retryDelays = [0, 2000, 4000];
+        const token = await getOAuthToken();
+
+        for (let i = 0; i < retryDelays.length; i++) {
+          if (retryDelays[i] > 0) {
+            await new Promise((r) => setTimeout(r, retryDelays[i]));
+          }
+          try {
+            const statusResult = await checkTransactionStatus(token, reference, storedAmount, storedPayToken);
+            lastStatus = statusResult.status || "UNKNOWN";
+            if (lastStatus === "SUCCESS") {
+              isSuccess = true;
+              break;
+            }
+            if (lastStatus === "FAILED" || lastStatus === "EXPIRED") {
+              break;
+            }
+          } catch {
+            lastStatus = "ERROR";
+          }
         }
       } else {
         isSuccess = true;
@@ -521,7 +536,7 @@ Deno.serve(async (req: Request) => {
       if (!isSuccess) {
         return jsonResponse({
           success: false,
-          status: "failed",
+          status: lastStatus === "FAILED" || lastStatus === "EXPIRED" ? "failed" : "pending",
           payment_mode: pending.payment_mode,
           booking_id: pending.booking_id,
           order_id: pending.order_id,

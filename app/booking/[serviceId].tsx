@@ -222,7 +222,7 @@ export default function BookingScreen() {
       if (priceBreakdown.travelFee > 0) {
         const paymentReference = generateOrderNumber();
         const isWeb = Platform.OS === 'web';
-        const callbackUrl = isWeb ? getPaymentCallbackUrl() : undefined;
+        const callbackUrl = isWeb ? getPaymentCallbackUrl(paymentReference) : undefined;
 
         let omResult: any;
         try {

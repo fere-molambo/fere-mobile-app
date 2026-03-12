@@ -13,11 +13,15 @@ interface PendingPaymentParams {
   payToken?: string;
 }
 
-export function getPaymentCallbackUrl(): string {
+export function getPaymentCallbackUrl(reference?: string): string {
   const origin = Platform.OS === 'web' && typeof window !== 'undefined'
     ? window.location.origin
     : 'https://fere.app';
-  return `${origin}/payment-callback`;
+  const base = `${origin}/payment-callback`;
+  if (reference) {
+    return `${base}?reference=${encodeURIComponent(reference)}`;
+  }
+  return base;
 }
 
 export async function savePendingPayment(params: PendingPaymentParams) {
