@@ -262,10 +262,14 @@ async function handleVerifyRegistration(
   }
 
   const internalPassword = crypto.randomUUID();
+  const normalizedPhone = pending.phone.replace(/^\+/, "");
+  const phoneEmail = `${normalizedPhone}@phone.fere.app`;
 
   const { data: authUser, error: authError } = await supabase.auth.admin.createUser({
     phone: pending.phone,
     phone_confirm: true,
+    email: phoneEmail,
+    email_confirm: true,
     password: internalPassword,
     user_metadata: {
       full_name: pending.full_name,
