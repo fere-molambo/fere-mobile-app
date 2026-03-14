@@ -1,6 +1,6 @@
 import { Tabs } from 'expo-router';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Home, Tag, ShoppingCart, MessageCircle, Settings, Package, Truck, Wallet, Store } from 'lucide-react-native';
+import { Hop as Home, Tag, ShoppingCart, MessageCircle, Settings, Package, Truck, Wallet, Store } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { useChat } from '@/contexts/ChatContext';
@@ -11,7 +11,7 @@ export default function TabLayout() {
   const { totalUnreadCount } = useChat();
   const cartCount = getCartCount();
 
-  const isClient = userRole === 'client';
+  const isClient = userRole === 'membre';
   const isDriver = userRole === 'livreur';
   const isVendor = userRole === 'vendeur' || userRole === 'equipe';
 

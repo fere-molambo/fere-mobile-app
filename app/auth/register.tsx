@@ -1,58 +1,74 @@
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ScrollView, KeyboardAvoidingView, Platform, Alert } from 'react-native';
+import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useState } from 'react';
 import { useRouter } from 'expo-router';
-import { useAuth } from '@/contexts/AuthContext';
 import { AppRole } from '@/types/database';
-import { User, Phone, Mail, Lock, Eye, EyeOff, ChevronDown } from 'lucide-react-native';
+import { User, Mail, ChevronDown } from 'lucide-react-native';
+import PhoneInput from '@/components/PhoneInput';
+import PinInput from '@/components/PinInput';
+import * as phoneAuth from '@/lib/phoneAuth';
+import type { PhoneAuthError } from '@/lib/phoneAuth';
 
 export default function RegisterScreen() {
   const [activeTab, setActiveTab] = useState<'connexion' | 'inscription'>('inscription');
   const [nomComplet, setNomComplet] = useState('');
-  const [contact, setContact] = useState('');
+  const [countryCode, setCountryCode] = useState('+223');
+  const [phoneNumber, setPhoneNumber] = useState('');
   const [email, setEmail] = useState('');
-  const [selectedRole, setSelectedRole] = useState<AppRole>('client');
-  const [password, setPassword] = useState('');
-  const [confirmPassword, setConfirmPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
-  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [selectedRole, setSelectedRole] = useState<AppRole>('membre');
+  const [pin, setPin] = useState('');
+  const [confirmPin, setConfirmPin] = useState('');
   const [showRolePicker, setShowRolePicker] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [pinError, setPinError] = useState<string | null>(null);
 
   const router = useRouter();
-  const { signUp } = useAuth();
 
   const roleOptions: { value: AppRole; label: string }[] = [
-    { value: 'client', label: 'Membre' },
+    { value: 'membre', label: 'Membre' },
     { value: 'livreur', label: 'Livreur' },
     { value: 'vendeur', label: 'Vendeur' },
   ];
 
   const handleRegister = async () => {
-    if (!nomComplet || !contact || !email || !password || !confirmPassword) {
-      Alert.alert('Erreur', 'Veuillez remplir tous les champs');
+    setError(null);
+    setPinError(null);
+
+    if (!nomComplet || !phoneNumber) {
+      setError('Veuillez remplir le nom et le telephone');
       return;
     }
 
-    if (password !== confirmPassword) {
-      Alert.alert('Erreur', 'Les mots de passe ne correspondent pas');
+    if (pin.length !== 6) {
+      setPinError('Le code PIN doit contenir 6 chiffres');
       return;
     }
 
-    if (password.length < 6) {
-      Alert.alert('Erreur', 'Le mot de passe doit contenir au moins 6 caractères');
+    if (pin !== confirmPin) {
+      setPinError('Les codes PIN ne correspondent pas');
       return;
     }
+
+    const fullPhone = `${countryCode}${phoneNumber}`;
 
     setLoading(true);
-    const { error } = await signUp(email, password, nomComplet, contact, selectedRole);
-    setLoading(false);
-
-    if (error) {
-      Alert.alert('Erreur d\'inscription', error.message);
-    } else {
-      Alert.alert('Succès', 'Votre compte a été créé avec succès', [
-        { text: 'OK', onPress: () => router.replace('/(tabs)') }
-      ]);
+    try {
+      await phoneAuth.register(fullPhone, nomComplet, pin, selectedRole, email || undefined);
+      router.push({
+        pathname: '/auth/otp-verification',
+        params: {
+          phone: fullPhone,
+          full_name: nomComplet,
+          pin,
+          role: selectedRole,
+          email: email || '',
+        },
+      });
+    } catch (err: unknown) {
+      const authErr = err as PhoneAuthError;
+      setError(authErr.error || 'Erreur lors de l\'inscription');
+    } finally {
+      setLoading(false);
     }
   };
 
@@ -68,8 +84,8 @@ export default function RegisterScreen() {
             style={styles.logo}
             resizeMode="contain"
           />
-          <Text style={styles.title}>Créer un compte</Text>
-          <Text style={styles.subtitle}>Rejoignez la communauté Fere</Text>
+          <Text style={styles.title}>Creer un compte</Text>
+          <Text style={styles.subtitle}>Rejoignez la communaute Fere</Text>
         </View>
 
         <View style={styles.tabContainer}>
@@ -92,6 +108,12 @@ export default function RegisterScreen() {
         </View>
 
         <View style={styles.form}>
+          {error && (
+            <View style={styles.errorBanner}>
+              <Text style={styles.errorBannerText}>{error}</Text>
+            </View>
+          )}
+
           <Text style={styles.label}>Nom complet</Text>
           <View style={styles.inputContainer}>
             <User size={20} color="#666" style={styles.icon} />
@@ -103,19 +125,17 @@ export default function RegisterScreen() {
             />
           </View>
 
-          <Text style={styles.label}>Numéro de téléphone</Text>
-          <View style={styles.inputContainer}>
-            <Phone size={20} color="#666" style={styles.icon} />
-            <TextInput
-              style={styles.input}
-              placeholder="+223"
-              value={contact}
-              onChangeText={setContact}
-              keyboardType="phone-pad"
-            />
-          </View>
+          <Text style={styles.label}>Numero de telephone</Text>
+          <PhoneInput
+            countryCode={countryCode}
+            onCountryCodeChange={setCountryCode}
+            number={phoneNumber}
+            onNumberChange={setPhoneNumber}
+          />
 
-          <Text style={styles.label}>Email</Text>
+          <View style={styles.spacer} />
+
+          <Text style={styles.label}>Email (optionnel)</Text>
           <View style={styles.inputContainer}>
             <Mail size={20} color="#666" style={styles.icon} />
             <TextInput
@@ -128,7 +148,7 @@ export default function RegisterScreen() {
             />
           </View>
 
-          <Text style={styles.label}>Vous êtes</Text>
+          <Text style={styles.label}>Vous etes</Text>
           <TouchableOpacity
             style={styles.pickerContainer}
             onPress={() => setShowRolePicker(!showRolePicker)}
@@ -156,42 +176,23 @@ export default function RegisterScreen() {
             </View>
           )}
 
-          <Text style={styles.label}>Mot de passe</Text>
-          <View style={styles.inputContainer}>
-            <Lock size={20} color="#666" style={styles.icon} />
-            <TextInput
-              style={styles.input}
-              placeholder="••••••••"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPassword}
-            />
-            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-              {showPassword ? (
-                <EyeOff size={20} color="#666" />
-              ) : (
-                <Eye size={20} color="#666" />
-              )}
-            </TouchableOpacity>
-          </View>
+          <Text style={styles.label}>Code PIN (6 chiffres)</Text>
+          <PinInput
+            value={pin}
+            onChange={(v) => { setPin(v); setPinError(null); }}
+            length={6}
+            secure
+            error={pinError || undefined}
+          />
 
-          <Text style={styles.label}>Confirmer le mot de passe</Text>
-          <View style={styles.inputContainer}>
-            <Lock size={20} color="#666" style={styles.icon} />
-            <TextInput
-              style={styles.input}
-              placeholder="••••••••"
-              value={confirmPassword}
-              onChangeText={setConfirmPassword}
-              secureTextEntry={!showConfirmPassword}
+          <View style={styles.confirmPinSection}>
+            <Text style={styles.label}>Confirmer le code PIN</Text>
+            <PinInput
+              value={confirmPin}
+              onChange={(v) => { setConfirmPin(v); setPinError(null); }}
+              length={6}
+              secure
             />
-            <TouchableOpacity onPress={() => setShowConfirmPassword(!showConfirmPassword)}>
-              {showConfirmPassword ? (
-                <EyeOff size={20} color="#666" />
-              ) : (
-                <Eye size={20} color="#666" />
-              )}
-            </TouchableOpacity>
           </View>
 
           <TouchableOpacity
@@ -292,6 +293,20 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1a1a1a',
   },
+  spacer: {
+    height: 4,
+  },
+  errorBanner: {
+    backgroundColor: '#fee2e2',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 16,
+  },
+  errorBannerText: {
+    fontSize: 14,
+    color: '#991b1b',
+    textAlign: 'center',
+  },
   pickerContainer: {
     flexDirection: 'row',
     alignItems: 'center',
@@ -326,12 +341,15 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#1a1a1a',
   },
+  confirmPinSection: {
+    marginTop: 20,
+  },
   registerButton: {
     backgroundColor: '#003f2f',
     borderRadius: 12,
     paddingVertical: 16,
     alignItems: 'center',
-    marginTop: 12,
+    marginTop: 24,
   },
   registerButtonDisabled: {
     opacity: 0.6,

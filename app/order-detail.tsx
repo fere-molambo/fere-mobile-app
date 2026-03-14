@@ -221,7 +221,7 @@ export default function OrderDetailScreen() {
           .insert({
             order_id: order.id,
             cancelled_by: user.id,
-            canceller_role: 'client',
+            canceller_role: 'membre',
             reason_id: selectedReasonId,
             status_at_cancellation: order.status,
             refund_amount: 0,
@@ -264,7 +264,7 @@ export default function OrderDetailScreen() {
           .insert({
             order_id: order.id,
             cancelled_by: user.id,
-            canceller_role: 'client',
+            canceller_role: 'membre',
             reason_id: selectedReasonId,
             status_at_cancellation: order.status,
             refund_amount: order.advance_amount || 0,

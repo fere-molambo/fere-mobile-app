@@ -17,7 +17,7 @@ export default function NotificationsScreen() {
   const [prefs, setPrefs] = useState<Record<string, boolean>>({});
   const [loading, setLoading] = useState(true);
 
-  const fields = ROLE_PREFERENCE_FIELDS[userRole || 'client'] || ROLE_PREFERENCE_FIELDS.client;
+  const fields = ROLE_PREFERENCE_FIELDS[userRole || 'membre'] || ROLE_PREFERENCE_FIELDS.membre;
 
   const loadPrefs = useCallback(async () => {
     if (!user) return;

@@ -10,8 +10,7 @@ interface AuthContextType {
   profile: Profile | null;
   userRole: AppRole | null;
   loading: boolean;
-  signIn: (email: string, password: string) => Promise<{ error: any }>;
-  signUp: (email: string, password: string, nomComplet: string, contact: string, role: AppRole) => Promise<{ error: any }>;
+  setSessionFromTokens: (accessToken: string, refreshToken: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
 }
@@ -103,60 +102,11 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     }
   };
 
-  const signIn = async (email: string, password: string) => {
-    const { error } = await supabase.auth.signInWithPassword({
-      email,
-      password,
+  const setSessionFromTokens = async (accessToken: string, refreshToken: string) => {
+    await supabase.auth.setSession({
+      access_token: accessToken,
+      refresh_token: refreshToken,
     });
-    return { error };
-  };
-
-  const signUp = async (
-    email: string,
-    password: string,
-    nomComplet: string,
-    contact: string,
-    role: AppRole
-  ) => {
-    const { data, error } = await supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          nom_complet: nomComplet,
-          contact: contact,
-        },
-      },
-    });
-
-    if (error) return { error };
-
-    if (data.user) {
-      const { error: roleError } = await supabase.rpc('assign_self_role', {
-        role_name: role,
-      });
-
-      if (roleError) {
-        console.error('Error assigning role:', roleError);
-      }
-
-      if (role === 'vendeur') {
-        const slug = nomComplet
-          .toLowerCase()
-          .replace(/[^a-z0-9]+/g, '-')
-          .replace(/(^-|-$)/g, '')
-          + '-' + Date.now().toString(36);
-        await supabase.from('shops').insert({
-          owner_id: data.user.id,
-          name: nomComplet,
-          slug,
-          is_active: false,
-          verification_status: 'pending',
-        }).then(() => {});
-      }
-    }
-
-    return { error: null };
   };
 
   const signOut = async () => {
@@ -178,8 +128,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         profile,
         userRole,
         loading,
-        signIn,
-        signUp,
+        setSessionFromTokens,
         signOut,
         refreshProfile,
       }}

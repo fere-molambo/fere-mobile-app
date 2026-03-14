@@ -1,4 +1,4 @@
-export type AppRole = 'super_admin' | 'admin' | 'equipe' | 'vendeur' | 'livreur' | 'membre' | 'client';
+export type AppRole = 'super_admin' | 'admin' | 'equipe' | 'vendeur' | 'livreur' | 'membre';
 
 export type Sexe = 'homme' | 'femme';
 export type TrancheAge = '18-25' | '26-35' | '36-45' | '46-55' | '55+';

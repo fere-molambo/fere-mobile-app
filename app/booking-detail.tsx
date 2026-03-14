@@ -130,7 +130,7 @@ export default function BookingDetailScreen() {
     await supabase.from('cancellations').insert({
       booking_id: booking.id,
       cancelled_by: user.id,
-      canceller_role: 'client',
+      canceller_role: 'membre',
       reason_id: data.reasonId,
       custom_reason: data.comment || null,
       attachment_url: data.proofUrl || null,

@@ -1,5 +1,5 @@
 export const ROLE_PREFERENCE_FIELDS: Record<string, string[]> = {
-  client: ['order_status_updates', 'delivery_tracking', 'promotions', 'messages', 'booking_reminders'],
+  membre: ['order_status_updates', 'delivery_tracking', 'promotions', 'messages', 'booking_reminders'],
   vendeur: ['new_orders', 'order_cancellations', 'new_reviews', 'new_bookings', 'messages', 'low_stock'],
   equipe: ['new_orders', 'new_bookings', 'messages'],
   livreur: ['new_delivery_available', 'delivery_status_changes', 'payout_updates', 'messages'],

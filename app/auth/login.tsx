@@ -1,35 +1,80 @@
-import { View, Text, TextInput, TouchableOpacity, StyleSheet, Image, ScrollView, KeyboardAvoidingView, Platform, Alert } from 'react-native';
-import { useState } from 'react';
+import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
+import { useState, useEffect, useRef } from 'react';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
-import { Mail, Lock, Eye, EyeOff } from 'lucide-react-native';
+import PhoneInput from '@/components/PhoneInput';
+import PinInput from '@/components/PinInput';
+import * as phoneAuth from '@/lib/phoneAuth';
+import type { PhoneAuthError } from '@/lib/phoneAuth';
 
 export default function LoginScreen() {
   const [activeTab, setActiveTab] = useState<'connexion' | 'inscription'>('connexion');
-  const [email, setEmail] = useState('');
-  const [password, setPassword] = useState('');
-  const [showPassword, setShowPassword] = useState(false);
+  const [countryCode, setCountryCode] = useState('+223');
+  const [phoneNumber, setPhoneNumber] = useState('');
+  const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [blockedSeconds, setBlockedSeconds] = useState(0);
+  const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const router = useRouter();
-  const { signIn } = useAuth();
+  const { setSessionFromTokens } = useAuth();
+
+  useEffect(() => {
+    if (blockedSeconds <= 0) {
+      if (timerRef.current) clearInterval(timerRef.current);
+      return;
+    }
+    timerRef.current = setInterval(() => {
+      setBlockedSeconds((s) => {
+        if (s <= 1) {
+          if (timerRef.current) clearInterval(timerRef.current);
+          return 0;
+        }
+        return s - 1;
+      });
+    }, 1000);
+    return () => { if (timerRef.current) clearInterval(timerRef.current); };
+  }, [blockedSeconds > 0]);
 
   const handleLogin = async () => {
-    if (!email || !password) {
-      Alert.alert('Erreur', 'Veuillez remplir tous les champs');
+    setError(null);
+    const fullPhone = `${countryCode}${phoneNumber}`;
+
+    if (!phoneNumber) {
+      setError('Veuillez entrer votre numero de telephone');
+      return;
+    }
+    if (pin.length !== 6) {
+      setError('Le code PIN doit contenir 6 chiffres');
       return;
     }
 
     setLoading(true);
-    const { error } = await signIn(email, password);
-    setLoading(false);
-
-    if (error) {
-      Alert.alert('Erreur de connexion', error.message);
-    } else {
-      router.replace('/(tabs)');
+    try {
+      const result = await phoneAuth.login(fullPhone, pin);
+      if (result.access_token && result.refresh_token) {
+        await setSessionFromTokens(result.access_token, result.refresh_token);
+        router.replace('/(tabs)');
+      }
+    } catch (err: unknown) {
+      const authErr = err as PhoneAuthError;
+      setError(authErr.error || 'Erreur de connexion');
+      if (authErr.remaining_seconds && authErr.remaining_seconds > 0) {
+        setBlockedSeconds(authErr.remaining_seconds);
+      }
+    } finally {
+      setLoading(false);
     }
   };
+
+  const formatTimer = (seconds: number) => {
+    const m = Math.floor(seconds / 60);
+    const s = seconds % 60;
+    return `${m}:${s.toString().padStart(2, '0')}`;
+  };
+
+  const isBlocked = blockedSeconds > 0;
 
   return (
     <KeyboardAvoidingView
@@ -44,7 +89,7 @@ export default function LoginScreen() {
             resizeMode="contain"
           />
           <Text style={styles.title}>Connexion</Text>
-          <Text style={styles.subtitle}>Accédez à votre espace Fere</Text>
+          <Text style={styles.subtitle}>Accedez a votre espace Fere</Text>
         </View>
 
         <View style={styles.tabContainer}>
@@ -67,46 +112,51 @@ export default function LoginScreen() {
         </View>
 
         <View style={styles.form}>
-          <Text style={styles.label}>Email ou Téléphone</Text>
-          <View style={styles.inputContainer}>
-            <Mail size={20} color="#666" style={styles.icon} />
-            <TextInput
-              style={styles.input}
-              placeholder="email@example.com ou +223701234"
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
+          {error && (
+            <View style={styles.errorBanner}>
+              <Text style={styles.errorBannerText}>{error}</Text>
+            </View>
+          )}
+
+          {isBlocked && (
+            <View style={styles.blockedBanner}>
+              <Text style={styles.blockedText}>
+                Trop de tentatives. Reessayez dans {formatTimer(blockedSeconds)}
+              </Text>
+            </View>
+          )}
+
+          <Text style={styles.label}>Numero de telephone</Text>
+          <PhoneInput
+            countryCode={countryCode}
+            onCountryCodeChange={setCountryCode}
+            number={phoneNumber}
+            onNumberChange={setPhoneNumber}
+          />
+
+          <View style={styles.pinSection}>
+            <Text style={styles.label}>Code PIN</Text>
+            <PinInput
+              value={pin}
+              onChange={setPin}
+              length={6}
+              secure
             />
           </View>
 
-          <Text style={styles.label}>Mot de passe</Text>
-          <View style={styles.inputContainer}>
-            <Lock size={20} color="#666" style={styles.icon} />
-            <TextInput
-              style={styles.input}
-              placeholder="••••••••"
-              value={password}
-              onChangeText={setPassword}
-              secureTextEntry={!showPassword}
-            />
-            <TouchableOpacity onPress={() => setShowPassword(!showPassword)}>
-              {showPassword ? (
-                <EyeOff size={20} color="#666" />
-              ) : (
-                <Eye size={20} color="#666" />
-              )}
+          <View style={styles.linksRow}>
+            <TouchableOpacity onPress={() => router.push('/auth/reset-pin')}>
+              <Text style={styles.linkText}>PIN oublie ?</Text>
+            </TouchableOpacity>
+            <TouchableOpacity onPress={() => router.push('/auth/admin-reset')}>
+              <Text style={styles.linkText}>Demander a un admin</Text>
             </TouchableOpacity>
           </View>
 
-          <TouchableOpacity style={styles.forgotPassword}>
-            <Text style={styles.forgotPasswordText}>Mot de passe oublié ?</Text>
-          </TouchableOpacity>
-
           <TouchableOpacity
-            style={[styles.loginButton, loading && styles.loginButtonDisabled]}
+            style={[styles.loginButton, (loading || isBlocked) && styles.loginButtonDisabled]}
             onPress={handleLogin}
-            disabled={loading}
+            disabled={loading || isBlocked}
           >
             <Text style={styles.loginButtonText}>
               {loading ? 'Connexion...' : 'Se connecter'}
@@ -180,32 +230,41 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#1a1a1a',
-    marginBottom: 8,
+    marginBottom: 10,
   },
-  inputContainer: {
+  pinSection: {
+    marginTop: 24,
+  },
+  errorBanner: {
+    backgroundColor: '#fee2e2',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 16,
+  },
+  errorBannerText: {
+    fontSize: 14,
+    color: '#991b1b',
+    textAlign: 'center',
+  },
+  blockedBanner: {
+    backgroundColor: '#fef3c7',
+    borderRadius: 10,
+    padding: 12,
+    marginBottom: 16,
+  },
+  blockedText: {
+    fontSize: 14,
+    color: '#92400e',
+    textAlign: 'center',
+    fontWeight: '600',
+  },
+  linksRow: {
     flexDirection: 'row',
-    alignItems: 'center',
-    backgroundColor: '#f9f9f9',
-    borderRadius: 12,
-    paddingHorizontal: 16,
-    paddingVertical: 14,
-    marginBottom: 20,
-    borderWidth: 1,
-    borderColor: '#e5e5e5',
-  },
-  icon: {
-    marginRight: 12,
-  },
-  input: {
-    flex: 1,
-    fontSize: 16,
-    color: '#1a1a1a',
-  },
-  forgotPassword: {
-    alignSelf: 'flex-end',
+    justifyContent: 'space-between',
+    marginTop: 20,
     marginBottom: 24,
   },
-  forgotPasswordText: {
+  linkText: {
     fontSize: 14,
     color: '#003f2f',
     fontWeight: '500',

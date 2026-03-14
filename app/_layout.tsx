@@ -14,6 +14,9 @@ function RootLayoutInner() {
         <Stack.Screen name="index" />
         <Stack.Screen name="auth/login" />
         <Stack.Screen name="auth/register" />
+        <Stack.Screen name="auth/otp-verification" />
+        <Stack.Screen name="auth/reset-pin" />
+        <Stack.Screen name="auth/admin-reset" />
         <Stack.Screen name="(tabs)" />
         <Stack.Screen name="settings" />
         <Stack.Screen name="checkout" options={{ headerShown: false }} />
