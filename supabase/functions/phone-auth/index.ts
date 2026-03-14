@@ -404,9 +404,10 @@ async function handleLogin(
     return jsonResponse({ error: "Erreur de configuration du compte" }, 500);
   }
 
+  const normalizedPhone = phone.replace(/^\+/, "");
   const { data: session, error: signInError } =
     await supabase.auth.signInWithPassword({
-      email: `${phone}@phone.fere.app`,
+      email: `${normalizedPhone}@phone.fere.app`,
       password: userPin.internal_password,
     });
 
