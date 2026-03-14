@@ -406,7 +406,7 @@ async function handleLogin(
 
   const { data: session, error: signInError } =
     await supabase.auth.signInWithPassword({
-      phone,
+      email: `${phone}@phone.fere.app`,
       password: userPin.internal_password,
     });
 
