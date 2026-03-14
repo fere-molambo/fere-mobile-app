@@ -63,7 +63,7 @@ function generateOtp(): string {
 }
 
 async function sendSmsViaIkoddi(
-  localNumber: string,
+  fullNumber: string,
   message: string,
   phoneCode: string,
   isoCode: string,
@@ -76,7 +76,7 @@ async function sendSmsViaIkoddi(
       "x-api-key": IKODDI_API_KEY,
     },
     body: JSON.stringify({
-      sentTo: [localNumber],
+      sentTo: [fullNumber],
       message,
       from: "Fere",
       smsBroadCast: "OTP",
@@ -219,7 +219,7 @@ async function handleRegister(
 
   const country = extractCountryInfo(phone);
   const message = `Votre code de verification Fere est : ${otp}. Valable ${OTP_EXPIRY_MINUTES} minutes.`;
-  await sendSmsViaIkoddi(country.localNumber, message, country.phoneCode, country.isoCode);
+  await sendSmsViaIkoddi(country.fullNumber, message, country.phoneCode, country.isoCode);
   await recordOtpSent(supabase, phone);
 
   return jsonResponse({ sms_sent: true });
@@ -466,7 +466,7 @@ async function handleResetPinRequest(
 
   const country = extractCountryInfo(phone);
   const message = `Votre code de reinitialisation Fere est : ${otp}. Valable ${OTP_EXPIRY_MINUTES} minutes.`;
-  await sendSmsViaIkoddi(country.localNumber, message, country.phoneCode, country.isoCode);
+  await sendSmsViaIkoddi(country.fullNumber, message, country.phoneCode, country.isoCode);
   await recordOtpSent(supabase, phone);
 
   return jsonResponse({ sms_sent: true });
