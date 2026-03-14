@@ -60,7 +60,7 @@ export async function register(
 }
 
 export async function verifyRegistration(phone: string, otp: string) {
-  return request({ action: 'verify_registration', phone, otp });
+  return request({ action: 'verify-registration', phone, otp });
 }
 
 export async function login(phone: string, pin: string) {
@@ -68,13 +68,13 @@ export async function login(phone: string, pin: string) {
 }
 
 export async function resetPinRequest(phone: string) {
-  return request({ action: 'reset_pin_request', phone });
+  return request({ action: 'reset-pin-request', phone });
 }
 
 export async function resetPinConfirm(phone: string, otp: string, new_pin: string) {
-  return request({ action: 'reset_pin_confirm', phone, otp, new_pin });
+  return request({ action: 'reset-pin-confirm', phone, otp, new_pin });
 }
 
 export async function requestAdminReset(phone: string) {
-  return request({ action: 'request_admin_reset', phone });
+  return request({ action: 'request-admin-reset', phone });
 }
