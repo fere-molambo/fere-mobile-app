@@ -613,7 +613,7 @@ export default function BookingScreen() {
 
       <AddressModal
         visible={addressModalVisible}
-        onClose={() => setAddressModalVisible(false)}
+        onClose={(_shouldRefresh: boolean) => setAddressModalVisible(false)}
         onSave={handleAddressCreated}
         userId={user?.id || ''}
       />

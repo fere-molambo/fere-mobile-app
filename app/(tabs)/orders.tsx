@@ -11,7 +11,7 @@ import {
   TextInput,
   Alert,
 } from 'react-native';
-import { Package, Clock, CheckCircle, Truck, XCircle, Search, ArrowUpDown, MessageCircle, Calendar } from 'lucide-react-native';
+import { Package, Clock, CircleCheck as CheckCircle, Truck, Circle as XCircle, Search, ArrowUpDown, MessageCircle, Calendar } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -105,7 +105,7 @@ export default function OrdersScreen() {
     return <VendorEarningsScreen userId={user.id} userRole={userRole} />;
   }
 
-  const [sectionTab, setSectionTab] = useState<SectionTab>('products');
+  const [sectionTab, setSectionTab] = useState<string>('products');
   const [bookings, setBookings] = useState<BookingListItem[]>([]);
   const [bookingsLoading, setBookingsLoading] = useState(false);
 
@@ -314,24 +314,25 @@ export default function OrdersScreen() {
   }
 
   if (sectionTab === 'services') {
+    const currentTab = sectionTab as string;
     return (
       <View style={styles.container}>
         <AppHeader />
         <View style={styles.topSection}>
           <View style={styles.sectionTabs}>
             <TouchableOpacity
-              style={[styles.sectionTab, sectionTab === 'products' && styles.sectionTabActive]}
+              style={[styles.sectionTab, currentTab === 'products' && styles.sectionTabActive]}
               onPress={() => setSectionTab('products')}
             >
-              <Package size={16} color={sectionTab === 'products' ? '#003f2f' : '#999'} />
-              <Text style={[styles.sectionTabText, sectionTab === 'products' && styles.sectionTabTextActive]}>Produits</Text>
+              <Package size={16} color={currentTab === 'products' ? '#003f2f' : '#999'} />
+              <Text style={[styles.sectionTabText, currentTab === 'products' && styles.sectionTabTextActive]}>Produits</Text>
             </TouchableOpacity>
             <TouchableOpacity
-              style={[styles.sectionTab, sectionTab === 'services' && styles.sectionTabActive]}
+              style={[styles.sectionTab, currentTab === 'services' && styles.sectionTabActive]}
               onPress={() => setSectionTab('services')}
             >
-              <Calendar size={16} color={sectionTab === 'services' ? '#003f2f' : '#999'} />
-              <Text style={[styles.sectionTabText, sectionTab === 'services' && styles.sectionTabTextActive]}>Prestations</Text>
+              <Calendar size={16} color={currentTab === 'services' ? '#003f2f' : '#999'} />
+              <Text style={[styles.sectionTabText, currentTab === 'services' && styles.sectionTabTextActive]}>Prestations</Text>
             </TouchableOpacity>
           </View>
         </View>

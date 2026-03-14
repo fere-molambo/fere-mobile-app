@@ -12,6 +12,7 @@ interface ProductItem {
   name: string;
   description?: string | null;
   price: number;
+  price_type: string;
   main_media_url?: string | null;
   media_urls?: string[] | null;
   is_active: boolean;

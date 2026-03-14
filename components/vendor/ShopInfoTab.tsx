@@ -119,7 +119,7 @@ export default function ShopInfoTab({ shop, onUpdate }: Props) {
         .eq('shop_id', shop.id),
     ]);
     setZones((zonesRes.data || []) as Zone[]);
-    setTeamMembers((teamRes.data || []) as TeamMember[]);
+    setTeamMembers((teamRes.data || []) as unknown as TeamMember[]);
   }, [shop.id]);
 
   useEffect(() => { loadExtras(); }, [loadExtras]);

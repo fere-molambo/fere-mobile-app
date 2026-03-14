@@ -6,8 +6,9 @@ import {
   TouchableOpacity,
   StyleSheet,
   Platform,
+  ActivityIndicator,
 } from 'react-native';
-import { AlertCircle } from 'lucide-react-native';
+import { CircleAlert as AlertCircle } from 'lucide-react-native';
 
 interface ConfirmDialogProps {
   visible: boolean;
@@ -18,6 +19,7 @@ interface ConfirmDialogProps {
   onConfirm: () => void;
   onCancel: () => void;
   destructive?: boolean;
+  loading?: boolean;
 }
 
 export default function ConfirmDialog({
@@ -29,6 +31,7 @@ export default function ConfirmDialog({
   onConfirm,
   onCancel,
   destructive = false,
+  loading = false,
 }: ConfirmDialogProps) {
   return (
     <Modal
@@ -51,7 +54,8 @@ export default function ConfirmDialog({
           <View style={styles.buttonContainer}>
             <TouchableOpacity
               style={[styles.button, styles.cancelButton]}
-              onPress={onCancel}>
+              onPress={onCancel}
+              disabled={loading}>
               <Text style={styles.cancelButtonText}>{cancelText}</Text>
             </TouchableOpacity>
 
@@ -61,8 +65,13 @@ export default function ConfirmDialog({
                 styles.confirmButton,
                 destructive && styles.destructiveButton,
               ]}
-              onPress={onConfirm}>
-              <Text style={styles.confirmButtonText}>{confirmText}</Text>
+              onPress={onConfirm}
+              disabled={loading}>
+              {loading ? (
+                <ActivityIndicator size="small" color="#fff" />
+              ) : (
+                <Text style={styles.confirmButtonText}>{confirmText}</Text>
+              )}
             </TouchableOpacity>
           </View>
         </View>

@@ -114,7 +114,7 @@ export default function ProductCard({ product, onPress, fullWidth = false }: Pro
         )}
 
         <Text style={styles.stockText}>
-          {product.quantity_available > 0
+          {(product.quantity_available ?? 0) > 0
             ? `${product.quantity_available} en stock`
             : 'Rupture de stock'}
         </Text>

@@ -63,7 +63,7 @@ export default function VendorEarningsScreen({ userId, userRole }: Props) {
         .order('created_at', { ascending: false })
         .limit(200);
 
-      setPayouts((payoutData || []) as VendorPayout[]);
+      setPayouts((payoutData || []) as unknown as VendorPayout[]);
     } finally {
       setLoading(false);
       setRefreshing(false);

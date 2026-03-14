@@ -1,11 +1,4 @@
-import {
-  Clock,
-  CheckCircle,
-  Truck,
-  MapPin,
-  BoxSelect,
-  Send,
-} from 'lucide-react-native';
+import { Clock, CircleCheck as CheckCircle, Truck, MapPin, TextSelect as BoxSelect, Send } from 'lucide-react-native';
 
 export interface OrderDetail {
   id: string;
@@ -35,6 +28,8 @@ export interface OrderDetail {
     label: string;
     address: string;
     city: string;
+    geolocation_lat?: number | null;
+    geolocation_lng?: number | null;
   } | null;
 }
 

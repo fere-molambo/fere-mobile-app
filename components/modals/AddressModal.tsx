@@ -17,16 +17,18 @@ import type { DeliveryAddress } from '@/types/database';
 
 interface AddressModalProps {
   visible: boolean;
-  address: DeliveryAddress | null;
+  address?: DeliveryAddress | null;
   userId: string;
   onClose: (shouldRefresh: boolean) => void;
+  onSave?: () => void;
 }
 
 export default function AddressModal({
   visible,
-  address,
+  address = null,
   userId,
   onClose,
+  onSave,
 }: AddressModalProps) {
   const [loading, setLoading] = useState(false);
   const [gettingLocation, setGettingLocation] = useState(false);
@@ -166,7 +168,12 @@ export default function AddressModal({
           .eq('user_id', userId);
       }
 
-      onClose(true);
+      if (onSave) {
+        onSave();
+        onClose(false);
+      } else {
+        onClose(true);
+      }
       resetForm();
     } catch (err: any) {
       setError(err.message || 'Erreur lors de la sauvegarde');

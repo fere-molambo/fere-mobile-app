@@ -6,7 +6,10 @@ import FullScreenMapModal from '@/components/tracking/FullScreenMapModal';
 
 interface Props {
   referenceId: string;
+  referenceType?: string;
   destination?: { lat: number; lng: number } | null;
+  destinationLat?: number;
+  destinationLng?: number;
   trackerLabel?: string;
   height?: number;
 }
@@ -22,7 +25,8 @@ function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-export default function TrackingMap({ referenceId, destination, trackerLabel, height = 250 }: Props) {
+export default function TrackingMap({ referenceId, referenceType, destination, destinationLat, destinationLng, trackerLabel, height = 250 }: Props) {
+  const resolvedDestination = destination ?? (destinationLat !== undefined && destinationLng !== undefined ? { lat: destinationLat, lng: destinationLng } : null);
   const { position, isActive } = useTrackingSession(referenceId);
   const [fullscreen, setFullscreen] = useState(false);
 
@@ -37,7 +41,7 @@ export default function TrackingMap({ referenceId, destination, trackerLabel, he
     );
   }
 
-  const dist = destination ? calculateDistance(position.lat, position.lng, destination.lat, destination.lng) : null;
+  const dist = resolvedDestination ? calculateDistance(position.lat, position.lng, resolvedDestination.lat, resolvedDestination.lng) : null;
   const distText = dist !== null ? (dist < 1 ? `${Math.round(dist * 1000)} m` : `${dist.toFixed(1)} km`) : null;
   const etaMinutes = dist !== null && position.speed && position.speed > 1 ? Math.ceil((dist * 1000) / (position.speed * 60)) : null;
   const speedKmh = position.speed && position.speed > 0 ? Math.round(position.speed * 3.6) : null;
@@ -50,7 +54,7 @@ export default function TrackingMap({ referenceId, destination, trackerLabel, he
             <View style={styles.markerDot}>
               <Navigation size={16} color="#fff" style={position.heading ? { transform: [{ rotate: `${position.heading}deg` }] } : undefined} />
             </View>
-            {destination && (
+            {resolvedDestination && (
               <View style={styles.destMarker}>
                 <MapPin size={14} color="#fff" />
               </View>
@@ -90,7 +94,7 @@ export default function TrackingMap({ referenceId, destination, trackerLabel, he
         )}
       </View>
 
-      <FullScreenMapModal visible={fullscreen} onClose={() => setFullscreen(false)} position={position} destination={destination} trackerLabel={trackerLabel} />
+      <FullScreenMapModal visible={fullscreen} onClose={() => setFullscreen(false)} position={position} destination={resolvedDestination} trackerLabel={trackerLabel} />
     </View>
   );
 }

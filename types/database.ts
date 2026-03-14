@@ -158,6 +158,9 @@ export interface Product {
   quantity_intervals?: Array<{ min: number; max: number; price: number }>;
   min_auto_price?: number;
   auto_validation?: boolean;
+  is_negotiable?: boolean;
+  is_wholesale?: boolean;
+  sales_count?: number;
   is_active: boolean;
   created_at: string;
   updated_at: string;
@@ -197,6 +200,7 @@ export interface Service {
   travel_fee_amount?: number;
   min_auto_price?: number;
   auto_validation?: boolean;
+  bookings_count?: number;
   is_active: boolean;
   created_at: string;
   updated_at: string;
