@@ -78,7 +78,7 @@ async function sendSmsViaIkoddi(
     body: JSON.stringify({
       sentTo: [fullNumber],
       message,
-      from: "Fere",
+      from: "Ikoddi",
       smsBroadCast: "OTP",
       countryNumberCode: phoneCode,
       countryStringCode: isoCode,
