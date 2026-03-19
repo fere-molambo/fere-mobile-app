@@ -56,6 +56,8 @@ export default function LoginScreen() {
       if (result.access_token && result.refresh_token) {
         await setSessionFromTokens(result.access_token, result.refresh_token);
         router.replace('/(tabs)');
+      } else {
+        setError('Reponse invalide du serveur. Veuillez reessayer.');
       }
     } catch (err: unknown) {
       const authErr = err as PhoneAuthError;

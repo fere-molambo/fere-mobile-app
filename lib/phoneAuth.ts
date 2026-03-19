@@ -19,12 +19,21 @@ export interface PhoneAuthError {
 }
 
 async function request(body: Record<string, unknown>): Promise<PhoneAuthResponse> {
-  const { data, error } = await supabase.functions.invoke('phone-auth', { body });
-
-  console.log('phone-auth response:', JSON.stringify(data));
+  const { data, error, response } = await supabase.functions.invoke('phone-auth', { body }) as {
+    data: PhoneAuthResponse | null;
+    error: any;
+    response?: Response;
+  };
 
   if (error) {
-    const errBody = data as PhoneAuthResponse | null;
+    let errBody: PhoneAuthResponse | null = null;
+    if (response) {
+      try {
+        errBody = await response.json();
+      } catch {
+        // response body already consumed or not JSON
+      }
+    }
     const err: PhoneAuthError = {
       error: errBody?.error || error.message || 'Une erreur est survenue',
       blocked_until: errBody?.blocked_until,
@@ -42,7 +51,7 @@ async function request(body: Record<string, unknown>): Promise<PhoneAuthResponse
     throw err;
   }
 
-  return data;
+  return data as PhoneAuthResponse;
 }
 
 export async function register(
