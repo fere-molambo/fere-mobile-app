@@ -1,14 +1,15 @@
-const SUPABASE_URL = process.env.EXPO_PUBLIC_SUPABASE_URL!;
-const SUPABASE_ANON_KEY = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY!;
-const PHONE_AUTH_URL = `${SUPABASE_URL}/functions/v1/phone-auth`;
+import { supabase } from '@/lib/supabase';
 
-interface PhoneAuthSuccess {
+interface PhoneAuthResponse {
   access_token?: string;
   refresh_token?: string;
   user?: any;
   sms_sent?: boolean;
   success?: boolean;
   requested?: boolean;
+  error?: string;
+  blocked_until?: string;
+  remaining_seconds?: number;
 }
 
 export interface PhoneAuthError {
@@ -17,22 +18,24 @@ export interface PhoneAuthError {
   remaining_seconds?: number;
 }
 
-async function request(body: Record<string, unknown>): Promise<PhoneAuthSuccess> {
-  const resp = await fetch(PHONE_AUTH_URL, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'Authorization': `Bearer ${SUPABASE_ANON_KEY}`,
-      'Apikey': SUPABASE_ANON_KEY,
-    },
-    body: JSON.stringify(body),
-  });
+async function request(body: Record<string, unknown>): Promise<PhoneAuthResponse> {
+  const { data, error } = await supabase.functions.invoke('phone-auth', { body });
 
-  const data = await resp.json();
+  console.log('phone-auth response:', JSON.stringify(data));
 
-  if (!resp.ok) {
+  if (error) {
+    const errBody = data as PhoneAuthResponse | null;
     const err: PhoneAuthError = {
-      error: data.error || 'Une erreur est survenue',
+      error: errBody?.error || error.message || 'Une erreur est survenue',
+      blocked_until: errBody?.blocked_until,
+      remaining_seconds: errBody?.remaining_seconds,
+    };
+    throw err;
+  }
+
+  if (data?.error) {
+    const err: PhoneAuthError = {
+      error: data.error,
       blocked_until: data.blocked_until,
       remaining_seconds: data.remaining_seconds,
     };
