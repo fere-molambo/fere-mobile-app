@@ -4,6 +4,7 @@ import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { AuthProvider } from '@/contexts/AuthContext';
 import { CartProvider } from '@/contexts/CartContext';
 import { ChatProvider } from '@/contexts/ChatContext';
+import { AuthFlowProvider } from '@/contexts/AuthFlowContext';
 import CartModal from '@/components/CartModal';
 import NotificationHandler from '@/components/NotificationHandler';
 
@@ -42,11 +43,13 @@ export default function RootLayout() {
 
   return (
     <AuthProvider>
-      <CartProvider>
-        <ChatProvider>
-          <RootLayoutInner />
-        </ChatProvider>
-      </CartProvider>
+      <AuthFlowProvider>
+        <CartProvider>
+          <ChatProvider>
+            <RootLayoutInner />
+          </ChatProvider>
+        </CartProvider>
+      </AuthFlowProvider>
     </AuthProvider>
   );
 }

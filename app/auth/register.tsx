@@ -7,6 +7,7 @@ import PhoneInput from '@/components/PhoneInput';
 import PinInput from '@/components/PinInput';
 import * as phoneAuth from '@/lib/phoneAuth';
 import type { PhoneAuthError } from '@/lib/phoneAuth';
+import { useAuthFlow } from '@/contexts/AuthFlowContext';
 
 export default function RegisterScreen() {
   const [activeTab, setActiveTab] = useState<'connexion' | 'inscription'>('inscription');
@@ -23,6 +24,7 @@ export default function RegisterScreen() {
   const [pinError, setPinError] = useState<string | null>(null);
 
   const router = useRouter();
+  const { setFlowData } = useAuthFlow();
 
   const roleOptions: { value: AppRole; label: string }[] = [
     { value: 'membre', label: 'Membre' },
@@ -54,16 +56,14 @@ export default function RegisterScreen() {
     setLoading(true);
     try {
       await phoneAuth.register(fullPhone, nomComplet, pin, selectedRole, email || undefined);
-      router.push({
-        pathname: '/auth/otp-verification',
-        params: {
-          phone: fullPhone,
-          full_name: nomComplet,
-          pin,
-          role: selectedRole,
-          email: email || '',
-        },
+      setFlowData({
+        phone: fullPhone,
+        full_name: nomComplet,
+        pin,
+        role: selectedRole,
+        email: email || '',
       });
+      router.push('/auth/otp-verification');
     } catch (err: unknown) {
       const authErr = err as PhoneAuthError;
       setError(authErr.error || 'Erreur lors de l\'inscription');

@@ -37,6 +37,14 @@ function jsonResponse(data: unknown, status = 200) {
   });
 }
 
+function normalizePhone(phone: string): string {
+  let cleaned = phone.trim().replace(/\s+/g, "").replace(/-/g, "");
+  if (!cleaned.startsWith("+")) {
+    cleaned = "+" + cleaned;
+  }
+  return cleaned;
+}
+
 function extractCountryInfo(phone: string) {
   const cleaned = phone.replace(/^\+/, "");
   for (const code of Object.keys(COUNTRY_MAP).sort((a, b) => b.length - a.length)) {
@@ -67,7 +75,7 @@ async function sendSmsViaIkoddi(
   message: string,
   phoneCode: string,
   isoCode: string,
-): Promise<boolean> {
+): Promise<{ ok: boolean; status: number; body: string }> {
   const url = `${IKODDI_BASE}/${IKODDI_ORGANIZATION_ID}/sms`;
   const resp = await fetch(url, {
     method: "POST",
@@ -84,7 +92,9 @@ async function sendSmsViaIkoddi(
       countryStringCode: isoCode,
     }),
   });
-  return resp.ok;
+  const body = await resp.text();
+  console.log(`[iKoddi SMS] to=${fullNumber} status=${resp.status} body=${body}`);
+  return { ok: resp.ok, status: resp.status, body };
 }
 
 async function checkOtpRateLimit(
@@ -165,21 +175,24 @@ async function handleRegister(
   supabase: ReturnType<typeof createClient>,
   body: Record<string, unknown>,
 ) {
-  const { phone, full_name, pin, role, email } = body as {
+  const { full_name, pin, role, email } = body as {
     phone: string;
     full_name: string;
     pin: string;
     role: string;
     email?: string;
   };
+  const rawPhone = body.phone as string;
 
-  if (!phone || !full_name || !pin || !role) {
+  if (!rawPhone || !full_name || !pin || !role) {
     return jsonResponse({ error: "Champs requis manquants" }, 400);
   }
 
   if (String(pin).length !== 6) {
     return jsonResponse({ error: "Le PIN doit contenir 6 chiffres" }, 400);
   }
+
+  const phone = normalizePhone(rawPhone);
 
   const { data: existingUser } = await supabase
     .from("profiles")
@@ -229,11 +242,14 @@ async function handleVerifyRegistration(
   supabase: ReturnType<typeof createClient>,
   body: Record<string, unknown>,
 ) {
-  const { phone, otp } = body as { phone: string; otp: string };
+  const { otp } = body as { phone: string; otp: string };
+  const rawPhone = body.phone as string;
 
-  if (!phone || !otp) {
+  if (!rawPhone || !otp) {
     return jsonResponse({ error: "Telephone et code requis" }, 400);
   }
+
+  const phone = normalizePhone(rawPhone);
 
   const { data: pending } = await supabase
     .from("pending_registrations")
@@ -313,11 +329,14 @@ async function handleLogin(
   supabase: ReturnType<typeof createClient>,
   body: Record<string, unknown>,
 ) {
-  const { phone, pin } = body as { phone: string; pin: string };
+  const { pin } = body as { phone: string; pin: string };
+  const rawPhone = body.phone as string;
 
-  if (!phone || !pin) {
+  if (!rawPhone || !pin) {
     return jsonResponse({ error: "Telephone et PIN requis" }, 400);
   }
+
+  const phone = normalizePhone(rawPhone);
 
   const { data: attempt } = await supabase
     .from("login_attempts")
@@ -376,9 +395,7 @@ async function handleLogin(
       });
     }
 
-    const remaining = blocked
-      ? LOGIN_BLOCK_MINUTES * 60
-      : 0;
+    const remaining = blocked ? LOGIN_BLOCK_MINUTES * 60 : 0;
 
     return jsonResponse(
       {
@@ -408,10 +425,10 @@ async function handleLogin(
     return jsonResponse({ error: "Erreur de configuration du compte" }, 500);
   }
 
-  const normalizedPhone = phone.replace(/^\+/, "");
+  const strippedPhone = phone.replace(/^\+/, "");
   const { data: session, error: signInError } =
     await supabase.auth.signInWithPassword({
-      email: `${normalizedPhone}@phone.fere.app`,
+      email: `${strippedPhone}@phone.fere.app`,
       password: userPin.internal_password,
     });
 
@@ -433,11 +450,13 @@ async function handleResetPinRequest(
   supabase: ReturnType<typeof createClient>,
   body: Record<string, unknown>,
 ) {
-  const { phone } = body as { phone: string };
+  const rawPhone = body.phone as string;
 
-  if (!phone) {
+  if (!rawPhone) {
     return jsonResponse({ error: "Numero de telephone requis" }, 400);
   }
+
+  const phone = normalizePhone(rawPhone);
 
   const { data: profile } = await supabase
     .from("profiles")
@@ -481,19 +500,22 @@ async function handleResetPinConfirm(
   supabase: ReturnType<typeof createClient>,
   body: Record<string, unknown>,
 ) {
-  const { phone, otp, new_pin } = body as {
+  const { otp, new_pin } = body as {
     phone: string;
     otp: string;
     new_pin: string;
   };
+  const rawPhone = body.phone as string;
 
-  if (!phone || !otp || !new_pin) {
+  if (!rawPhone || !otp || !new_pin) {
     return jsonResponse({ error: "Champs requis manquants" }, 400);
   }
 
   if (String(new_pin).length !== 6) {
     return jsonResponse({ error: "Le PIN doit contenir 6 chiffres" }, 400);
   }
+
+  const phone = normalizePhone(rawPhone);
 
   const { data: pending } = await supabase
     .from("pending_pin_resets")
@@ -564,11 +586,13 @@ async function handleAdminResetRequest(
   supabase: ReturnType<typeof createClient>,
   body: Record<string, unknown>,
 ) {
-  const { phone } = body as { phone: string };
+  const rawPhone = body.phone as string;
 
-  if (!phone) {
+  if (!rawPhone) {
     return jsonResponse({ error: "Numero de telephone requis" }, 400);
   }
+
+  const phone = normalizePhone(rawPhone);
 
   const { data: profile } = await supabase
     .from("profiles")

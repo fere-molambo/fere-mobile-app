@@ -1,20 +1,15 @@
 import { View, Text, TouchableOpacity, StyleSheet, Image, ScrollView, KeyboardAvoidingView, Platform } from 'react-native';
 import { useState, useEffect, useRef } from 'react';
-import { useLocalSearchParams, useRouter } from 'expo-router';
+import { useRouter } from 'expo-router';
 import PinInput from '@/components/PinInput';
 import * as phoneAuth from '@/lib/phoneAuth';
 import type { PhoneAuthError } from '@/lib/phoneAuth';
+import { useAuthFlow } from '@/contexts/AuthFlowContext';
 
 const RESEND_COOLDOWN = 60;
 
 export default function OtpVerificationScreen() {
-  const params = useLocalSearchParams<{
-    phone: string;
-    full_name: string;
-    pin: string;
-    role: string;
-    email: string;
-  }>();
+  const { flowData, clearFlowData } = useAuthFlow();
 
   const [otp, setOtp] = useState('');
   const [loading, setLoading] = useState(false);
@@ -39,12 +34,16 @@ export default function OtpVerificationScreen() {
     return () => { if (timerRef.current) clearInterval(timerRef.current); };
   }, []);
 
-  const maskedPhone = params.phone
-    ? params.phone.slice(0, 6) + '****' + params.phone.slice(-2)
+  const maskedPhone = flowData?.phone
+    ? flowData.phone.slice(0, 6) + '****' + flowData.phone.slice(-2)
     : '';
 
   const handleVerify = async () => {
     setError(null);
+    if (!flowData?.phone) {
+      setError('Session expiree, veuillez recommencer l\'inscription');
+      return;
+    }
     if (otp.length !== 6) {
       setError('Veuillez entrer le code a 6 chiffres');
       return;
@@ -52,7 +51,8 @@ export default function OtpVerificationScreen() {
 
     setLoading(true);
     try {
-      await phoneAuth.verifyRegistration(params.phone, otp);
+      await phoneAuth.verifyRegistration(flowData.phone, otp);
+      clearFlowData();
       setSuccess(true);
       setTimeout(() => {
         router.replace('/auth/login');
@@ -66,16 +66,16 @@ export default function OtpVerificationScreen() {
   };
 
   const handleResend = async () => {
-    if (resendCooldown > 0 || resending) return;
+    if (resendCooldown > 0 || resending || !flowData) return;
     setResending(true);
     setError(null);
     try {
       await phoneAuth.register(
-        params.phone,
-        params.full_name,
-        params.pin,
-        params.role,
-        params.email || undefined,
+        flowData.phone,
+        flowData.full_name,
+        flowData.pin,
+        flowData.role,
+        flowData.email || undefined,
       );
       setResendCooldown(RESEND_COOLDOWN);
       timerRef.current = setInterval(() => {
