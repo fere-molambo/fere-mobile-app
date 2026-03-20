@@ -55,10 +55,7 @@ export default function RegisterScreen() {
 
     setLoading(true);
     try {
-      const result = await phoneAuth.register(fullPhone, nomComplet, pin, selectedRole, email || undefined);
-      if (result.sms_sent === false && result.dev_otp) {
-        console.log('[DEV] OTP code:', result.dev_otp);
-      }
+      await phoneAuth.register(fullPhone, nomComplet, pin, selectedRole, email || undefined);
       setFlowData({
         phone: fullPhone,
         full_name: nomComplet,

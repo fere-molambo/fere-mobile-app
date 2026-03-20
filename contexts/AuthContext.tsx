@@ -80,13 +80,13 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       if (profileError) throw profileError;
       setProfile(profileData);
 
-      const { data: roleData } = await supabase
+      const { data: rolesData } = await supabase
         .from('user_roles')
         .select('role')
-        .eq('user_id', userId)
-        .maybeSingle();
+        .eq('user_id', userId);
 
-      setUserRole(roleData?.role ?? null);
+      const fetchedRole = rolesData?.[0]?.role ?? null;
+      setUserRole(fetchedRole);
       registerPushToken(userId).catch(() => {});
     } catch (error) {
       console.error('Error loading profile:', error);

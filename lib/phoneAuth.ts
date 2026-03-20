@@ -6,12 +6,12 @@ interface PhoneAuthSession {
   user?: any;
 }
 
-interface PhoneAuthResponse {
+export interface PhoneAuthResponse {
   success: boolean;
   error?: string;
   session?: PhoneAuthSession;
   sms_sent?: boolean;
-  dev_otp?: string;
+  message?: string;
   requested?: boolean;
   blocked_until?: string;
   remaining_seconds?: number;
