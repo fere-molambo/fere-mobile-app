@@ -9,7 +9,7 @@ import type { PhoneAuthError } from '@/lib/phoneAuth';
 
 export default function LoginScreen() {
   const [activeTab, setActiveTab] = useState<'connexion' | 'inscription'>('connexion');
-  const [countryCode, setCountryCode] = useState('+223');
+  const [countryCode, setCountryCode] = useState('+225');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
@@ -53,8 +53,8 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       const result = await phoneAuth.login(fullPhone, pin);
-      if (result.access_token && result.refresh_token) {
-        await setSessionFromTokens(result.access_token, result.refresh_token);
+      if (result.session?.access_token && result.session?.refresh_token) {
+        await setSessionFromTokens(result.session.access_token, result.session.refresh_token);
         router.replace('/(tabs)');
       } else {
         setError('Reponse invalide du serveur. Veuillez reessayer.');

@@ -10,7 +10,7 @@ const RESEND_COOLDOWN = 60;
 
 export default function ResetPinScreen() {
   const [step, setStep] = useState<1 | 2>(1);
-  const [countryCode, setCountryCode] = useState('+223');
+  const [countryCode, setCountryCode] = useState('+225');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [otp, setOtp] = useState('');
   const [newPin, setNewPin] = useState('');

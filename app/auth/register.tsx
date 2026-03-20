@@ -12,7 +12,7 @@ import { useAuthFlow } from '@/contexts/AuthFlowContext';
 export default function RegisterScreen() {
   const [activeTab, setActiveTab] = useState<'connexion' | 'inscription'>('inscription');
   const [nomComplet, setNomComplet] = useState('');
-  const [countryCode, setCountryCode] = useState('+223');
+  const [countryCode, setCountryCode] = useState('+225');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [email, setEmail] = useState('');
   const [selectedRole, setSelectedRole] = useState<AppRole>('membre');
@@ -55,7 +55,10 @@ export default function RegisterScreen() {
 
     setLoading(true);
     try {
-      await phoneAuth.register(fullPhone, nomComplet, pin, selectedRole, email || undefined);
+      const result = await phoneAuth.register(fullPhone, nomComplet, pin, selectedRole, email || undefined);
+      if (result.sms_sent === false && result.dev_otp) {
+        console.log('[DEV] OTP code:', result.dev_otp);
+      }
       setFlowData({
         phone: fullPhone,
         full_name: nomComplet,

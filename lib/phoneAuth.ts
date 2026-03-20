@@ -1,13 +1,18 @@
 import { supabase } from '@/lib/supabase';
 
-interface PhoneAuthResponse {
-  access_token?: string;
-  refresh_token?: string;
+interface PhoneAuthSession {
+  access_token: string;
+  refresh_token: string;
   user?: any;
-  sms_sent?: boolean;
-  success?: boolean;
-  requested?: boolean;
+}
+
+interface PhoneAuthResponse {
+  success: boolean;
   error?: string;
+  session?: PhoneAuthSession;
+  sms_sent?: boolean;
+  dev_otp?: string;
+  requested?: boolean;
   blocked_until?: string;
   remaining_seconds?: number;
 }
@@ -19,20 +24,21 @@ export interface PhoneAuthError {
 }
 
 async function request(body: Record<string, unknown>): Promise<PhoneAuthResponse> {
-  const { data, error, response } = await supabase.functions.invoke('phone-auth', { body }) as {
+  const { data, error } = await supabase.functions.invoke('phone-auth', { body }) as {
     data: PhoneAuthResponse | null;
     error: any;
-    response?: Response;
   };
+
+  console.log('phone-auth response:', JSON.stringify(data));
 
   if (error) {
     let errBody: PhoneAuthResponse | null = null;
-    if (response) {
-      try {
-        errBody = await response.json();
-      } catch {
-        // response body already consumed or not JSON
+    try {
+      if (error.context) {
+        errBody = await error.context.json();
       }
+    } catch {
+      // body already consumed or not JSON
     }
     const err: PhoneAuthError = {
       error: errBody?.error || error.message || 'Une erreur est survenue',
@@ -42,16 +48,16 @@ async function request(body: Record<string, unknown>): Promise<PhoneAuthResponse
     throw err;
   }
 
-  if (data?.error) {
+  if (!data?.success) {
     const err: PhoneAuthError = {
-      error: data.error,
-      blocked_until: data.blocked_until,
-      remaining_seconds: data.remaining_seconds,
+      error: data?.error || 'Une erreur est survenue',
+      blocked_until: data?.blocked_until,
+      remaining_seconds: data?.remaining_seconds,
     };
     throw err;
   }
 
-  return data as PhoneAuthResponse;
+  return data;
 }
 
 export async function register(
@@ -67,7 +73,7 @@ export async function register(
     full_name,
     pin,
     role,
-    ...(email ? { email } : {}),
+    email: email || '',
   });
 }
 
