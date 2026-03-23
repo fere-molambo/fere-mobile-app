@@ -9,9 +9,19 @@ const corsHeaders = {
 };
 
 const ORANGE_MONEY_MERCHANT_KEY = Deno.env.get("ORANGE_MONEY_MERCHANT_KEY") || "";
+const ORANGE_MONEY_CLIENT_ID = Deno.env.get("ORANGE_MONEY_CLIENT_ID") || "";
+const ORANGE_MONEY_CLIENT_SECRET = Deno.env.get("ORANGE_MONEY_CLIENT_SECRET") || "";
 const ORANGE_MONEY_AUTH_HEADER = Deno.env.get("ORANGE_MONEY_AUTH_HEADER") || "";
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
+
+function getOrangeMoneyAuthHeader(): string {
+  if (ORANGE_MONEY_CLIENT_ID && ORANGE_MONEY_CLIENT_SECRET) {
+    const encoded = btoa(`${ORANGE_MONEY_CLIENT_ID}:${ORANGE_MONEY_CLIENT_SECRET}`);
+    return `Basic ${encoded}`;
+  }
+  return ORANGE_MONEY_AUTH_HEADER;
+}
 
 const OM_TOKEN_URL = "https://api.orange.com/oauth/v3/token";
 const OM_WEBPAYMENT_URL = "https://api.orange.com/orange-money-webpay/dev/v1/webpayment";
@@ -34,7 +44,7 @@ async function getOAuthToken(): Promise<string> {
   const resp = await fetch(OM_TOKEN_URL, {
     method: "POST",
     headers: {
-      "Authorization": ORANGE_MONEY_AUTH_HEADER,
+      "Authorization": getOrangeMoneyAuthHeader(),
       "Content-Type": "application/x-www-form-urlencoded",
     },
     body: "grant_type=client_credentials",
