@@ -1,11 +1,5 @@
 import React, { useEffect, useRef, useState, useCallback } from 'react';
-import { View, Text, StyleSheet, TouchableOpacity, Platform } from 'react-native';
-import Animated, {
-  useSharedValue,
-  useAnimatedStyle,
-  withTiming,
-  runOnJS,
-} from 'react-native-reanimated';
+import { View, Text, StyleSheet, TouchableOpacity, Platform, Animated } from 'react-native';
 import { X } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { NOTIFICATION_ROUTES, type NotificationType } from '@/lib/notificationConstants';
@@ -19,19 +13,27 @@ interface ToastData {
 export default function NotificationHandler() {
   const router = useRouter();
   const [toast, setToast] = useState<ToastData | null>(null);
-  const translateY = useSharedValue(-120);
+  const translateY = useRef(new Animated.Value(-120)).current;
   const timerRef = useRef<ReturnType<typeof setTimeout> | null>(null);
 
   const dismissToast = useCallback(() => {
-    translateY.value = withTiming(-120, { duration: 300 }, () => {
-      runOnJS(setToast)(null);
+    Animated.timing(translateY, {
+      toValue: -120,
+      duration: 300,
+      useNativeDriver: true,
+    }).start(() => {
+      setToast(null);
     });
   }, [translateY]);
 
   const showToast = useCallback((data: ToastData) => {
     if (timerRef.current) clearTimeout(timerRef.current);
     setToast(data);
-    translateY.value = withTiming(0, { duration: 350 });
+    Animated.timing(translateY, {
+      toValue: 0,
+      duration: 350,
+      useNativeDriver: true,
+    }).start();
     timerRef.current = setTimeout(() => {
       dismissToast();
     }, 4000);
@@ -79,14 +81,10 @@ export default function NotificationHandler() {
     }
   }, [toast, dismissToast, router]);
 
-  const animatedStyle = useAnimatedStyle(() => ({
-    transform: [{ translateY: translateY.value }],
-  }));
-
   if (!toast) return null;
 
   return (
-    <Animated.View style={[styles.container, animatedStyle]}>
+    <Animated.View style={[styles.container, { transform: [{ translateY }] }]}>
       <TouchableOpacity style={styles.content} onPress={handleTap} activeOpacity={0.9}>
         <View style={styles.textContainer}>
           <Text style={styles.title} numberOfLines={1}>{toast.title}</Text>
