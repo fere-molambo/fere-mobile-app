@@ -69,11 +69,11 @@ export default function ServiceCard({ service, onPress, fullWidth = false }: Ser
           resizeMode="cover"
         />
 
-        {service.discount_percent && service.discount_percent > 0 && (
+        {service.discount_percent != null && service.discount_percent > 0 ? (
           <View style={styles.discountBadge}>
             <Text style={styles.discountText}>-{service.discount_percent}%</Text>
           </View>
-        )}
+        ) : null}
 
         <TouchableOpacity
           style={styles.favoriteButton}
@@ -105,20 +105,20 @@ export default function ServiceCard({ service, onPress, fullWidth = false }: Ser
 
         <View style={styles.priceContainer}>
           <Text style={styles.currentPrice}>{discountedPrice.toFixed(0)} FCFA</Text>
-          {service.discount_percent && service.discount_percent > 0 && (
+          {service.discount_percent != null && service.discount_percent > 0 ? (
             <Text style={styles.originalPrice}>{service.price.toFixed(0)} FCFA</Text>
-          )}
+          ) : null}
           {service.price_type && (
             <Text style={styles.priceType}>/{service.price_type}</Text>
           )}
         </View>
 
-        {service.duration && (
+        {service.duration != null && service.duration > 0 ? (
           <View style={styles.durationContainer}>
             <Clock color="#666" size={14} />
             <Text style={styles.durationText}>{service.duration} min</Text>
           </View>
-        )}
+        ) : null}
 
         {getServiceBadges().length > 0 && (
           <View style={styles.badgesContainer}>
