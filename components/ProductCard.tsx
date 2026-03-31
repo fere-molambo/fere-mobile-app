@@ -68,11 +68,11 @@ export default function ProductCard({ product, onPress, fullWidth = false }: Pro
           resizeMode="cover"
         />
 
-        {product.discount_percent && product.discount_percent > 0 && (
+        {product.discount_percent != null && product.discount_percent > 0 ? (
           <View style={styles.discountBadge}>
             <Text style={styles.discountText}>-{product.discount_percent}%</Text>
           </View>
-        )}
+        ) : null}
 
         <TouchableOpacity
           style={styles.favoriteButton}
@@ -98,9 +98,9 @@ export default function ProductCard({ product, onPress, fullWidth = false }: Pro
 
         <View style={styles.priceContainer}>
           <Text style={styles.currentPrice}>{discountedPrice.toFixed(0)} FCFA</Text>
-          {product.discount_percent && product.discount_percent > 0 && (
+          {product.discount_percent != null && product.discount_percent > 0 ? (
             <Text style={styles.originalPrice}>{product.price.toFixed(0)} FCFA</Text>
-          )}
+          ) : null}
         </View>
 
         {getConditionBadges().length > 0 && (
