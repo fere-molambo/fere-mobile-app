@@ -144,3 +144,8 @@ export const useAuth = () => {
   }
   return context;
 };
+
+export const useAuthSafe = (): AuthContextType | null => {
+  const context = useContext(AuthContext);
+  return context ?? null;
+};
