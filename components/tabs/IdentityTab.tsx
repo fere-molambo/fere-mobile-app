@@ -9,8 +9,8 @@ import {
   Image,
   Platform,
 } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
-import { Upload, FileCheck, AlertCircle } from 'lucide-react-native';
+import DropdownSelect from '@/components/vendor/DropdownSelect';
+import { Upload, FileCheck, CircleAlert as AlertCircle } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import * as DocumentPicker from 'expo-document-picker';
 import { supabase } from '@/lib/supabase';
@@ -162,19 +162,18 @@ export default function IdentityTab({ profile, onUpdate }: IdentityTabProps) {
         </Text>
 
         <View style={styles.field}>
-          <Text style={styles.label}>Type de pièce d'identité *</Text>
-          <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={idType}
-              onValueChange={(value) => setIdType(value as PieceIdentiteClientType)}
-              style={styles.picker}>
-              <Picker.Item label="Sélectionner" value="" />
-              <Picker.Item label="Carte d'étudiant" value="carte_etudiant" />
-              <Picker.Item label="CNI (Carte Nationale d'Identité)" value="cni" />
-              <Picker.Item label="Passeport" value="passeport" />
-              <Picker.Item label="Permis de conduire" value="permis_conduire" />
-            </Picker>
-          </View>
+          <DropdownSelect
+            label="Type de pièce d'identité *"
+            value={idType}
+            onChange={(value) => setIdType(value as PieceIdentiteClientType)}
+            placeholder="Sélectionner"
+            options={[
+              { label: "Carte d'étudiant", value: 'carte_etudiant' },
+              { label: "CNI (Carte Nationale d'Identité)", value: 'cni' },
+              { label: 'Passeport', value: 'passeport' },
+              { label: 'Permis de conduire', value: 'permis_conduire' },
+            ]}
+          />
         </View>
 
         <View style={styles.field}>
@@ -282,14 +281,6 @@ const styles = StyleSheet.create({
     fontWeight: '600',
     color: '#374151',
     marginBottom: 8,
-  },
-  pickerContainer: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  picker: {
-    height: 50,
   },
   uploadArea: {
     backgroundColor: '#fafafa',

@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import { Picker } from '@react-native-picker/picker';
+import DropdownSelect from '@/components/vendor/DropdownSelect';
 import { supabase } from '@/lib/supabase';
 import type { Profile, DeliveryZone, DriverZone } from '@/types/database';
 
@@ -165,20 +165,19 @@ export default function DriverInfoTab({ profile, onUpdate }: DriverInfoTabProps)
         <Text style={styles.sectionTitle}>Informations du livreur</Text>
 
         <View style={styles.field}>
-          <Text style={styles.label}>Type d'engin *</Text>
-          <View style={styles.pickerContainer}>
-            <Picker
-              selectedValue={vehicleType}
-              onValueChange={(value) => setVehicleType(value)}
-              style={styles.picker}>
-              <Picker.Item label="Sélectionner" value="" />
-              <Picker.Item label="Vélo" value="velo" />
-              <Picker.Item label="Moto" value="moto" />
-              <Picker.Item label="Véhicule" value="vehicule" />
-              <Picker.Item label="Minivan" value="minivan" />
-              <Picker.Item label="Camion" value="camion" />
-            </Picker>
-          </View>
+          <DropdownSelect
+            label="Type d'engin *"
+            value={vehicleType}
+            onChange={(value) => setVehicleType(value)}
+            placeholder="Sélectionner"
+            options={[
+              { label: 'Vélo', value: 'velo' },
+              { label: 'Moto', value: 'moto' },
+              { label: 'Véhicule', value: 'vehicule' },
+              { label: 'Minivan', value: 'minivan' },
+              { label: 'Camion', value: 'camion' },
+            ]}
+          />
         </View>
 
         <View style={styles.field}>
@@ -318,14 +317,6 @@ const styles = StyleSheet.create({
     color: '#1f2937',
     borderWidth: 1,
     borderColor: 'transparent',
-  },
-  pickerContainer: {
-    backgroundColor: '#f5f5f5',
-    borderRadius: 8,
-    overflow: 'hidden',
-  },
-  picker: {
-    height: 50,
   },
   message: {
     padding: 12,
