@@ -1,3 +1,4 @@
+import { v4 as uuidv4 } from 'uuid';
 import React, { useState, useEffect, useCallback } from 'react';
 import {
   View,
@@ -225,7 +226,7 @@ export default function CheckoutScreen() {
     setError(null);
 
     try {
-      const paymentGroupId = crypto.randomUUID();
+      const paymentGroupId = uuidv4();
       const paymentReference = generateOrderNumber();
       const isWeb = Platform.OS === 'web';
       const callbackUrl = isWeb ? getPaymentCallbackUrl(paymentReference) : undefined;
