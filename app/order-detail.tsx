@@ -200,28 +200,13 @@ export default function OrderDetailScreen() {
         return;
       }
 
-      const { error: orderUpdateError } = await supabase
-        .from('orders')
-        .update({ status: 'cancelled' })
-        .eq('id', order.id);
-
-      if (orderUpdateError) throw orderUpdateError;
-
-      if (delivery) {
-        await supabase
-          .from('delivery_requests')
-          .update({ status: 'cancelled' })
-          .eq('order_id', order.id)
-          .eq('is_return', false);
-      }
-
       if (isDriverArrived && delivery) {
         const { error: cancellationError } = await supabase
           .from('cancellations')
           .insert({
             order_id: order.id,
             cancelled_by: user.id,
-            canceller_role: 'membre',
+            canceller_role: 'client',
             reason_id: selectedReasonId,
             status_at_cancellation: order.status,
             refund_amount: 0,
@@ -234,7 +219,7 @@ export default function OrderDetailScreen() {
 
         const { data: origDelivery } = await supabase
           .from('delivery_requests')
-          .select('id, driver_id, pickup_point, pickup_points, delivery_point, total_distance_meters, zone_id')
+          .select('id, driver_id, driver_earnings, pickup_point, pickup_points, delivery_point, total_distance_meters, zone_id')
           .eq('order_id', order.id)
           .eq('is_return', false)
           .maybeSingle();
@@ -249,22 +234,44 @@ export default function OrderDetailScreen() {
             is_return: true,
             return_status: 'en_route_vendor',
             original_delivery_id: origDelivery.id,
-            pickup_points: vendorPoint ? [vendorPoint] : [],
-            pickup_point: vendorPoint || null,
-            delivery_point: null,
+            pickup_point: origDelivery.delivery_point || null,
+            pickup_points: origDelivery.delivery_point ? [origDelivery.delivery_point] : [],
+            delivery_point: vendorPoint || null,
             total_distance_meters: origDelivery.total_distance_meters || 0,
             delivery_fee: 0,
             driver_earnings: 0,
             assigned_at: new Date().toISOString(),
           });
+
+          await supabase.from('pending_payouts').insert({
+            recipient_id: origDelivery.driver_id,
+            recipient_type: 'driver',
+            amount: origDelivery.driver_earnings || 0,
+            order_id: order.id,
+            delivery_request_id: origDelivery.id,
+            status: 'pending',
+            eligible_at: new Date().toISOString(),
+          });
         }
+
+        await supabase
+          .from('delivery_requests')
+          .update({ status: 'cancelled' })
+          .eq('id', delivery.id);
+
+        const { error: orderUpdateError } = await supabase
+          .from('orders')
+          .update({ status: 'cancelled' })
+          .eq('id', order.id);
+
+        if (orderUpdateError) throw orderUpdateError;
       } else {
         const { data: cancellationData, error: cancellationError } = await supabase
           .from('cancellations')
           .insert({
             order_id: order.id,
             cancelled_by: user.id,
-            canceller_role: 'membre',
+            canceller_role: 'client',
             reason_id: selectedReasonId,
             status_at_cancellation: order.status,
             refund_amount: order.advance_amount || 0,
@@ -276,6 +283,21 @@ export default function OrderDetailScreen() {
           .single();
 
         if (cancellationError) throw cancellationError;
+
+        if (delivery) {
+          await supabase
+            .from('delivery_requests')
+            .update({ status: 'cancelled' })
+            .eq('order_id', order.id)
+            .eq('is_return', false);
+        }
+
+        const { error: orderUpdateError } = await supabase
+          .from('orders')
+          .update({ status: 'cancelled' })
+          .eq('id', order.id);
+
+        if (orderUpdateError) throw orderUpdateError;
 
         if (order.advance_amount && order.advance_amount > 0) {
           await supabase.from('refunds').insert({

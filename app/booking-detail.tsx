@@ -117,6 +117,21 @@ export default function BookingDetailScreen() {
     if (!booking || !user) return;
     const isArrived = booking.status === 'arrived';
 
+    const { error: cancellationError } = await supabase.from('cancellations').insert({
+      booking_id: booking.id,
+      cancelled_by: user.id,
+      canceller_role: 'client',
+      reason_id: data.reasonId,
+      custom_reason: data.comment || null,
+      attachment_url: data.proofUrl || null,
+      status_at_cancellation: booking.status,
+      refund_amount: 0,
+      penalty_amount: 0,
+      delivery_fee_kept: isArrived,
+    });
+
+    if (cancellationError) throw cancellationError;
+
     await supabase
       .from('service_bookings')
       .update({
@@ -126,19 +141,6 @@ export default function BookingDetailScreen() {
         cancellation_proof_url: data.proofUrl || null,
       })
       .eq('id', booking.id);
-
-    await supabase.from('cancellations').insert({
-      booking_id: booking.id,
-      cancelled_by: user.id,
-      canceller_role: 'membre',
-      reason_id: data.reasonId,
-      custom_reason: data.comment || null,
-      attachment_url: data.proofUrl || null,
-      status_at_cancellation: booking.status,
-      refund_amount: 0,
-      penalty_amount: 0,
-      delivery_fee_kept: isArrived,
-    });
 
     if (!isArrived && booking.travel_fee_paid && booking.advance_paid > 0) {
       await supabase.from('refunds').insert({
