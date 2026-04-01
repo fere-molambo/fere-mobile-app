@@ -9,7 +9,8 @@ import {
   RefreshControl,
   Image,
 } from 'react-native';
-import { Package, Clock, CheckCircle, Truck, XCircle } from 'lucide-react-native';
+import { Package, Clock, CircleCheck as CheckCircle, Truck, Circle as XCircle } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import SettingsSubHeader from '@/components/SettingsSubHeader';
@@ -34,6 +35,7 @@ const STATUS_CONFIG: Record<string, { label: string; color: string; bg: string; 
 
 export default function OrdersSettingsScreen() {
   const { user } = useAuth();
+  const router = useRouter();
   const [orders, setOrders] = useState<any[]>([]);
   const [loading, setLoading] = useState(true);
   const [refreshing, setRefreshing] = useState(false);
@@ -97,7 +99,12 @@ export default function OrdersSettingsScreen() {
             const StatusIcon = config.icon;
 
             return (
-              <View key={order.id} style={styles.orderCard}>
+              <TouchableOpacity
+                key={order.id}
+                style={styles.orderCard}
+                activeOpacity={0.85}
+                onPress={() => router.push(`/order-detail?id=${order.id}` as any)}
+              >
                 <View style={styles.orderHeader}>
                   <View style={styles.shopRow}>
                     {order.shop?.logo_url && (
@@ -118,7 +125,7 @@ export default function OrdersSettingsScreen() {
                   <Text style={styles.totalAmount}>{formatPrice(order.total_amount)} FCFA</Text>
                   <Text style={styles.orderNumber}>#{order.order_number.slice(-8)}</Text>
                 </View>
-              </View>
+              </TouchableOpacity>
             );
           })}
           <View style={{ height: 24 }} />

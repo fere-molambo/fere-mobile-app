@@ -166,25 +166,11 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen
-          name="cart"
+          name="orders"
           options={{
-            title: 'Panier',
+            title: 'Commandes',
             tabBarIcon: ({ size, color }) => (
-              <View>
-                <ShoppingCart size={size} color={color} />
-                {cartCount > 0 && (
-                  <View style={tabStyles.badge}>
-                    <Text style={tabStyles.badgeText}>{cartCount > 99 ? '99+' : cartCount}</Text>
-                  </View>
-                )}
-              </View>
-            ),
-            tabBarButton: (props) => (
-              <TouchableOpacity
-                {...(props as any)}
-                onPress={openCart}
-                style={props.style}
-              />
+              <Package size={size} color={color} />
             ),
           }}
         />
@@ -214,7 +200,7 @@ export default function TabLayout() {
           }}
         />
         <Tabs.Screen name="shop" options={{ href: null }} />
-        <Tabs.Screen name="orders" options={{ href: null }} />
+        <Tabs.Screen name="cart" options={{ href: null }} />
         <Tabs.Screen name="profile" options={{ href: null }} />
       </Tabs>
     );

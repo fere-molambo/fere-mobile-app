@@ -31,7 +31,6 @@ const ACTIVITY_ITEMS: MenuItem[] = [
     icon: <Package color="#003f2f" size={20} />,
     label: 'Commandes',
     route: '/settings/orders',
-    comingSoon: true,
   },
   {
     icon: <RotateCcw color="#003f2f" size={20} />,
