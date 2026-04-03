@@ -243,15 +243,6 @@ export default function OrderDetailScreen() {
             assigned_at: new Date().toISOString(),
           });
 
-          await supabase.from('pending_payouts').insert({
-            recipient_id: origDelivery.driver_id,
-            recipient_type: 'driver',
-            amount: origDelivery.driver_earnings || 0,
-            order_id: order.id,
-            delivery_request_id: origDelivery.id,
-            status: 'pending',
-            eligible_at: new Date().toISOString(),
-          });
         }
 
         await supabase

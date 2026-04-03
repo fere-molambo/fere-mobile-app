@@ -115,34 +115,36 @@ export default function DriverEarningsScreen({ userId }: DriverEarningsScreenPro
     });
   }, [deliveries, datePreset, getDateRangeStart]);
 
+  const earningDeliveries = useMemo(() => {
+    return deliveriesInPeriod.filter(d =>
+      !d.is_return && (d.status === 'delivered' || (d.status === 'cancelled' && payouts[d.id]))
+    );
+  }, [deliveriesInPeriod, payouts]);
+
   const periodEarnings = useMemo(() => {
-    return deliveriesInPeriod
-      .filter(d => !d.is_return && d.status === 'delivered')
-      .reduce((sum, d) => sum + (d.driver_earnings || 0), 0);
-  }, [deliveriesInPeriod]);
+    return earningDeliveries.reduce((sum, d) => sum + (d.driver_earnings || 0), 0);
+  }, [earningDeliveries]);
 
   const totalPending = useMemo(() => {
-    const periodDelivered = deliveriesInPeriod.filter(d => !d.is_return && d.status === 'delivered');
-    const fromPayouts = periodDelivered
+    const fromPayouts = earningDeliveries
       .map(d => payouts[d.id])
       .filter((p): p is PendingPayout => !!p && p.status === 'pending')
       .reduce((sum, p) => sum + p.amount, 0);
-    const fromUntracked = periodDelivered
+    const fromUntracked = earningDeliveries
       .filter(d => !payouts[d.id])
       .reduce((sum, d) => sum + (d.driver_earnings || 0), 0);
     return fromPayouts + fromUntracked;
-  }, [payouts, deliveriesInPeriod]);
+  }, [payouts, earningDeliveries]);
 
   const totalPaid = useMemo(() => {
-    const periodDelivered = deliveriesInPeriod.filter(d => !d.is_return && d.status === 'delivered');
-    return periodDelivered
+    return earningDeliveries
       .map(d => payouts[d.id])
       .filter((p): p is PendingPayout => !!p && p.status === 'paid')
       .reduce((sum, p) => sum + p.amount, 0);
-  }, [payouts, deliveriesInPeriod]);
+  }, [payouts, earningDeliveries]);
 
   const filteredDeliveries = useMemo(() => {
-    let result = deliveriesInPeriod.filter(d => !d.is_return && d.status === 'delivered');
+    let result = [...earningDeliveries];
 
     if (filterTab === 'pending') {
       result = result.filter(d => {
@@ -166,7 +168,7 @@ export default function DriverEarningsScreen({ userId }: DriverEarningsScreenPro
     }
 
     return result;
-  }, [deliveriesInPeriod, payouts, filterTab, searchQuery]);
+  }, [earningDeliveries, payouts, filterTab, searchQuery]);
 
   const filters: { key: FilterTab; label: string }[] = [
     { key: 'all', label: 'Toutes' },
@@ -310,7 +312,13 @@ export default function DriverEarningsScreen({ userId }: DriverEarningsScreenPro
                   )}
 
                   <View style={styles.earningsFooter}>
-                    <DeliveryStatusBadge status={delivery.status} />
+                    {delivery.status === 'cancelled' && payouts[delivery.id] ? (
+                      <View style={cancelledBadgeStyles.badge}>
+                        <Text style={cancelledBadgeStyles.text}>Annulee a l'arrivee</Text>
+                      </View>
+                    ) : (
+                      <DeliveryStatusBadge status={delivery.status} />
+                    )}
                     <View style={styles.footerRight}>
                       <PayoutBadge status={payout?.status || 'pending'} />
                       {payout?.status === 'paid' && payout.processed_at ? (
@@ -353,6 +361,17 @@ function PayoutBadge({ status }: { status: string }) {
 const payoutStyles = StyleSheet.create({
   badge: { paddingHorizontal: 10, paddingVertical: 4, borderRadius: 8 },
   text: { fontSize: 12, fontWeight: '600' },
+});
+
+const cancelledBadgeStyles = StyleSheet.create({
+  badge: {
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: 8,
+    alignSelf: 'flex-start',
+    backgroundColor: '#fef3c7',
+  },
+  text: { fontSize: 12, fontWeight: '700', color: '#d97706' },
 });
 
 const styles = StyleSheet.create({
