@@ -4,12 +4,20 @@ import { supabase } from '@/lib/supabase';
 import { Profile, AppRole } from '@/types/database';
 import { registerPushToken, unregisterPushToken } from '@/lib/notificationService';
 
+export interface BlockedAccountInfo {
+  reason: string | null;
+  supportPhone: string;
+  supportEmail: string;
+}
+
 interface AuthContextType {
   session: Session | null;
   user: User | null;
   profile: Profile | null;
   userRole: AppRole | null;
   loading: boolean;
+  blockedAccount: BlockedAccountInfo | null;
+  clearBlockedAccount: () => void;
   setSessionFromTokens: (accessToken: string, refreshToken: string) => Promise<void>;
   signOut: () => Promise<void>;
   refreshProfile: () => Promise<void>;
@@ -23,6 +31,7 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   const [profile, setProfile] = useState<Profile | null>(null);
   const [userRole, setUserRole] = useState<AppRole | null>(null);
   const [loading, setLoading] = useState(true);
+  const [blockedAccount, setBlockedAccount] = useState<BlockedAccountInfo | null>(null);
 
   useEffect(() => {
     let authStateChangeFired = false;
@@ -78,6 +87,35 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         .single();
 
       if (profileError) throw profileError;
+
+      if (profileData?.is_blocked) {
+        let supportPhone = '+22300000000';
+        let supportEmail = 'support@fere.app';
+        try {
+          const { data: settings } = await supabase
+            .from('platform_settings')
+            .select('support_email, support_phone')
+            .maybeSingle();
+          if (settings?.support_phone) supportPhone = settings.support_phone;
+          if (settings?.support_email) supportEmail = settings.support_email;
+        } catch {
+          // use defaults
+        }
+
+        setBlockedAccount({
+          reason: profileData.blocked_reason ?? null,
+          supportPhone,
+          supportEmail,
+        });
+
+        setProfile(null);
+        setUser(null);
+        setSession(null);
+        setUserRole(null);
+        await supabase.auth.signOut();
+        return;
+      }
+
       setProfile(profileData);
 
       const { data: rolesData } = await supabase
@@ -93,6 +131,10 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
     } finally {
       setLoading(false);
     }
+  };
+
+  const clearBlockedAccount = () => {
+    setBlockedAccount(null);
   };
 
   const refreshProfile = async () => {
@@ -127,6 +169,8 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
         profile,
         userRole,
         loading,
+        blockedAccount,
+        clearBlockedAccount,
         setSessionFromTokens,
         signOut,
         refreshProfile,

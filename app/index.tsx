@@ -1,14 +1,21 @@
 import { View, Image, StyleSheet } from 'react-native';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
+import BlockedAccountScreen from '@/components/BlockedAccountScreen';
 
 export default function SplashScreen() {
   const router = useRouter();
-  const { loading, session } = useAuth();
+  const { loading, session, blockedAccount, clearBlockedAccount } = useAuth();
+  const [showBlocked, setShowBlocked] = useState(false);
 
   useEffect(() => {
     if (!loading) {
+      if (blockedAccount) {
+        setShowBlocked(true);
+        return;
+      }
+
       const timer = setTimeout(() => {
         if (session) {
           router.replace('/(tabs)');
@@ -19,7 +26,22 @@ export default function SplashScreen() {
 
       return () => clearTimeout(timer);
     }
-  }, [loading, session]);
+  }, [loading, session, blockedAccount]);
+
+  if (showBlocked && blockedAccount) {
+    return (
+      <BlockedAccountScreen
+        reason={blockedAccount.reason}
+        supportPhone={blockedAccount.supportPhone}
+        supportEmail={blockedAccount.supportEmail}
+        onBack={() => {
+          clearBlockedAccount();
+          setShowBlocked(false);
+          router.replace('/auth/login');
+        }}
+      />
+    );
+  }
 
   return (
     <View style={styles.container}>
