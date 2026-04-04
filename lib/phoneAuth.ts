@@ -21,6 +21,10 @@ export interface PhoneAuthError {
   error: string;
   blocked_until?: string;
   remaining_seconds?: number;
+  message?: string;
+  reason?: string;
+  support_phone?: string;
+  support_email?: string;
 }
 
 async function request(body: Record<string, unknown>): Promise<PhoneAuthResponse> {
@@ -32,7 +36,7 @@ async function request(body: Record<string, unknown>): Promise<PhoneAuthResponse
   console.log('phone-auth response:', JSON.stringify(data));
 
   if (error) {
-    let errBody: PhoneAuthResponse | null = null;
+    let errBody: any = null;
     try {
       if (error.context) {
         errBody = await error.context.json();
@@ -44,15 +48,24 @@ async function request(body: Record<string, unknown>): Promise<PhoneAuthResponse
       error: errBody?.error || error.message || 'Une erreur est survenue',
       blocked_until: errBody?.blocked_until,
       remaining_seconds: errBody?.remaining_seconds,
+      message: errBody?.message,
+      reason: errBody?.reason,
+      support_phone: errBody?.support_phone,
+      support_email: errBody?.support_email,
     };
     throw err;
   }
 
-  if (!data?.success) {
+  if (!data?.success && data?.error) {
+    const d = data as any;
     const err: PhoneAuthError = {
-      error: data?.error || 'Une erreur est survenue',
-      blocked_until: data?.blocked_until,
-      remaining_seconds: data?.remaining_seconds,
+      error: d.error || 'Une erreur est survenue',
+      blocked_until: d.blocked_until,
+      remaining_seconds: d.remaining_seconds,
+      message: d.message,
+      reason: d.reason,
+      support_phone: d.support_phone,
+      support_email: d.support_email,
     };
     throw err;
   }

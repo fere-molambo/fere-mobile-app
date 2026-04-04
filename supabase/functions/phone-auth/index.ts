@@ -360,12 +360,26 @@ async function handleLogin(
 
   const { data: profile } = await supabase
     .from("profiles")
-    .select("id")
+    .select("id, is_blocked, blocked_reason")
     .eq("contact", phone)
     .maybeSingle();
 
   if (!profile) {
     return jsonResponse({ error: "Numero non enregistre" }, 404);
+  }
+
+  if (profile.is_blocked) {
+    return jsonResponse(
+      {
+        success: false,
+        error: "account_blocked",
+        message: "Votre compte a ete suspendu.",
+        reason: profile.blocked_reason || null,
+        support_phone: "+22300000000",
+        support_email: "support@fere.app",
+      },
+      403,
+    );
   }
 
   const pinValid = await verifyPin(supabase, profile.id, pin);

@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { useAuth } from '@/contexts/AuthContext';
 import PhoneInput from '@/components/PhoneInput';
 import PinInput from '@/components/PinInput';
+import BlockedAccountScreen from '@/components/BlockedAccountScreen';
 import * as phoneAuth from '@/lib/phoneAuth';
 import type { PhoneAuthError } from '@/lib/phoneAuth';
 
@@ -15,6 +16,11 @@ export default function LoginScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [blockedSeconds, setBlockedSeconds] = useState(0);
+  const [accountBlocked, setAccountBlocked] = useState<{
+    reason?: string | null;
+    supportPhone?: string;
+    supportEmail?: string;
+  } | null>(null);
   const timerRef = useRef<ReturnType<typeof setInterval> | null>(null);
 
   const router = useRouter();
@@ -61,6 +67,14 @@ export default function LoginScreen() {
       }
     } catch (err: unknown) {
       const authErr = err as PhoneAuthError;
+      if (authErr.error === 'account_blocked') {
+        setAccountBlocked({
+          reason: authErr.reason,
+          supportPhone: authErr.support_phone,
+          supportEmail: authErr.support_email,
+        });
+        return;
+      }
       setError(authErr.error || 'Erreur de connexion');
       if (authErr.remaining_seconds && authErr.remaining_seconds > 0) {
         setBlockedSeconds(authErr.remaining_seconds);
@@ -77,6 +91,17 @@ export default function LoginScreen() {
   };
 
   const isBlocked = blockedSeconds > 0;
+
+  if (accountBlocked) {
+    return (
+      <BlockedAccountScreen
+        reason={accountBlocked.reason}
+        supportPhone={accountBlocked.supportPhone}
+        supportEmail={accountBlocked.supportEmail}
+        onBack={() => setAccountBlocked(null)}
+      />
+    );
+  }
 
   return (
     <KeyboardAvoidingView

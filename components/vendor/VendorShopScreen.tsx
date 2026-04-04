@@ -3,7 +3,7 @@ import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity,
   ActivityIndicator, Image,
 } from 'react-native';
-import { Store, Camera, AlertTriangle } from 'lucide-react-native';
+import { Store, Camera, TriangleAlert as AlertTriangle, Clock } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '@/lib/supabase';
 import { resolveVendorShopIds } from '@/lib/vendorUtils';
@@ -13,6 +13,7 @@ import ShopProductsTab from '@/components/vendor/ShopProductsTab';
 import ShopReviewsTab from '@/components/vendor/ShopReviewsTab';
 import ProductFormModal from '@/components/vendor/ProductFormModal';
 import ServiceFormModal from '@/components/vendor/ServiceFormModal';
+import ShopCreationForm from '@/components/vendor/ShopCreationForm';
 import type { AppRole } from '@/types/database';
 
 interface ShopFull {
@@ -230,11 +231,15 @@ export default function VendorShopScreen({ userId, userRole }: Props) {
     return (
       <View style={styles.container}>
         <AppHeader hideCart />
-        <View style={styles.centered}>
-          <Store color="#ccc" size={48} />
-          <Text style={styles.emptyTitle}>Aucune boutique</Text>
-          <Text style={styles.emptyText}>Aucune boutique active associee a votre compte.</Text>
-        </View>
+        {userRole === 'vendeur' ? (
+          <ShopCreationForm userId={userId} onCreated={loadData} />
+        ) : (
+          <View style={styles.centered}>
+            <Store color="#ccc" size={48} />
+            <Text style={styles.emptyTitle}>Aucune boutique</Text>
+            <Text style={styles.emptyText}>Aucune boutique active associee a votre compte.</Text>
+          </View>
+        )}
       </View>
     );
   }
@@ -273,11 +278,20 @@ export default function VendorShopScreen({ userId, userRole }: Props) {
     <View style={styles.container}>
       <AppHeader hideCart />
 
-      {!shop.is_active && (
+      {shop.verification_status === 'pending' && (
+        <View style={styles.pendingBanner}>
+          <Clock size={16} color="#0369a1" />
+          <Text style={styles.pendingBannerText}>
+            Votre boutique est en cours de validation par notre equipe. Vous pouvez deja ajouter vos produits et services. Ils seront visibles une fois la boutique activee.
+          </Text>
+        </View>
+      )}
+
+      {!shop.is_active && shop.verification_status !== 'pending' && (
         <View style={styles.inactiveBanner}>
           <AlertTriangle size={16} color="#92400e" />
           <Text style={styles.inactiveBannerText}>
-            Boutique inactive {shop.verification_status === 'pending' ? '- en attente de verification' : '- activez-la dans les parametres'}
+            Boutique inactive - activez-la dans les parametres
           </Text>
         </View>
       )}
@@ -355,6 +369,12 @@ export default function VendorShopScreen({ userId, userRole }: Props) {
 const styles = StyleSheet.create({
   container: { flex: 1, backgroundColor: '#f5f5f5' },
   centered: { flex: 1, justifyContent: 'center', alignItems: 'center', padding: 32, gap: 12 },
+  pendingBanner: {
+    flexDirection: 'row', alignItems: 'flex-start', gap: 8,
+    backgroundColor: '#e0f2fe', paddingHorizontal: 16, paddingVertical: 12,
+    borderBottomWidth: 1, borderBottomColor: '#7dd3fc',
+  },
+  pendingBannerText: { fontSize: 13, color: '#0c4a6e', flex: 1, lineHeight: 18 },
   inactiveBanner: {
     flexDirection: 'row', alignItems: 'center', gap: 8,
     backgroundColor: '#fef3c7', paddingHorizontal: 16, paddingVertical: 10,
