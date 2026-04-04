@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
 import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
-import { User, Heart, Package, RotateCcw, Wallet, Bell, Circle as HelpCircle, Scale, ChevronRight, LogOut } from 'lucide-react-native';
+import { User, Heart, Package, RotateCcw, Wallet, Bell, Circle as HelpCircle, Scale, ChevronRight, LogOut, Trash2 } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import AppHeader from '@/components/AppHeader';
 import { useAuth } from '@/contexts/AuthContext';
 import ConfirmDialog from '@/components/ConfirmDialog';
+import DeleteAccountModal from '@/components/DeleteAccountModal';
 
 interface MenuItem {
   icon: React.ReactNode;
@@ -129,6 +130,7 @@ export default function SettingsScreen() {
   const { signOut, userRole } = useAuth();
   const router = useRouter();
   const [showLogoutDialog, setShowLogoutDialog] = useState(false);
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
 
   const isDriver = userRole === 'livreur';
   const isVendor = userRole === 'vendeur' || userRole === 'equipe';
@@ -187,6 +189,14 @@ export default function SettingsScreen() {
               <LogOut color="#ff4444" size={20} />
               <Text style={styles.logoutText}>Deconnexion</Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.deleteAccountButton}
+              onPress={() => setShowDeleteModal(true)}
+            >
+              <Trash2 color="#DC2626" size={18} />
+              <Text style={styles.deleteAccountText}>Supprimer mon compte</Text>
+            </TouchableOpacity>
           </View>
         </ScrollView>
 
@@ -198,6 +208,10 @@ export default function SettingsScreen() {
           cancelText="Annuler"
           onConfirm={handleLogout}
           onCancel={() => setShowLogoutDialog(false)}
+        />
+        <DeleteAccountModal
+          visible={showDeleteModal}
+          onClose={() => setShowDeleteModal(false)}
         />
       </View>
     );
@@ -232,6 +246,14 @@ export default function SettingsScreen() {
               <LogOut color="#ff4444" size={20} />
               <Text style={styles.logoutText}>Deconnexion</Text>
             </TouchableOpacity>
+
+            <TouchableOpacity
+              style={styles.deleteAccountButton}
+              onPress={() => setShowDeleteModal(true)}
+            >
+              <Trash2 color="#DC2626" size={18} />
+              <Text style={styles.deleteAccountText}>Supprimer mon compte</Text>
+            </TouchableOpacity>
           </View>
         </ScrollView>
 
@@ -243,6 +265,10 @@ export default function SettingsScreen() {
           cancelText="Annuler"
           onConfirm={handleLogout}
           onCancel={() => setShowLogoutDialog(false)}
+        />
+        <DeleteAccountModal
+          visible={showDeleteModal}
+          onClose={() => setShowDeleteModal(false)}
         />
       </View>
     );
@@ -276,6 +302,14 @@ export default function SettingsScreen() {
             <LogOut color="#ff4444" size={20} />
             <Text style={styles.logoutText}>Deconnexion</Text>
           </TouchableOpacity>
+
+          <TouchableOpacity
+            style={styles.deleteAccountButton}
+            onPress={() => setShowDeleteModal(true)}
+          >
+            <Trash2 color="#DC2626" size={18} />
+            <Text style={styles.deleteAccountText}>Supprimer mon compte</Text>
+          </TouchableOpacity>
         </View>
       </ScrollView>
 
@@ -287,6 +321,10 @@ export default function SettingsScreen() {
         cancelText="Annuler"
         onConfirm={handleLogout}
         onCancel={() => setShowLogoutDialog(false)}
+      />
+      <DeleteAccountModal
+        visible={showDeleteModal}
+        onClose={() => setShowDeleteModal(false)}
       />
     </View>
   );
@@ -370,5 +408,18 @@ const styles = StyleSheet.create({
     fontSize: 16,
     fontWeight: '600',
     color: '#ff4444',
+  },
+  deleteAccountButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: 8,
+    paddingVertical: 12,
+    marginTop: 12,
+  },
+  deleteAccountText: {
+    fontSize: 14,
+    fontWeight: '500',
+    color: '#DC2626',
   },
 });
