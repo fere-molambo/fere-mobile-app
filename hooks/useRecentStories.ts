@@ -20,18 +20,20 @@ export function useRecentStories(limit: number = 5) {
         .from('shop_stories')
         .select(`
           *,
-          shop:shops(*),
+          shop:shops!inner(*),
           linked_product:products(*),
           linked_service:services(*)
         `)
         .eq('is_active', true)
+        .eq('shops.is_active', true)
+        .eq('shops.verification_status', 'verified')
         .gt('expires_at', new Date().toISOString())
         .order('created_at', { ascending: false })
         .limit(limit);
 
       if (fetchError) throw fetchError;
 
-      const validStories = data?.filter((s: any) => s.shop != null) || [];
+      const validStories = data || [];
       setStories(validStories);
     } catch (err: any) {
       setError(err.message);

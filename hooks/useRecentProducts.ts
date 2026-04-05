@@ -20,10 +20,12 @@ export function useRecentProducts(categoryId?: string, limit: number = 10) {
         .from('products')
         .select(`
           *,
-          shop:shops(*),
+          shop:shops!inner(*),
           category:product_categories!products_category_id_fkey(*)
         `)
         .eq('is_active', true)
+        .eq('shops.is_active', true)
+        .eq('shops.verification_status', 'verified')
         .order('created_at', { ascending: false })
         .limit(limit);
 

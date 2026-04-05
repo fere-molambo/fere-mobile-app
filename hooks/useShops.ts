@@ -20,6 +20,7 @@ export function useShops(limit?: number) {
         .from('shops')
         .select('*')
         .eq('is_active', true)
+        .eq('verification_status', 'verified')
         .order('created_at', { ascending: false });
 
       if (limit) {

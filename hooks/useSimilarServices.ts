@@ -49,8 +49,10 @@ export function useSimilarServices(serviceId: string, shopId: string, limit: num
 
       const { data, error: fetchError } = await supabase
         .from('services')
-        .select('*, shop:shops(*)')
+        .select('*, shop:shops!inner(*)')
         .eq('is_active', true)
+        .eq('shops.is_active', true)
+        .eq('shops.verification_status', 'verified')
         .in('shop_id', shopIds)
         .neq('id', serviceId)
         .order('created_at', { ascending: false })

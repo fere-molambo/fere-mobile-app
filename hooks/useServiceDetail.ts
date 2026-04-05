@@ -22,10 +22,12 @@ export function useServiceDetail(serviceId: string) {
         .from('services')
         .select(`
           *,
-          shop:shops(*)
+          shop:shops!inner(*)
         `)
         .eq('id', serviceId)
         .eq('is_active', true)
+        .eq('shops.is_active', true)
+        .eq('shops.verification_status', 'verified')
         .maybeSingle();
 
       if (fetchError) throw fetchError;

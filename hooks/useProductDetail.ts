@@ -22,12 +22,14 @@ export function useProductDetail(productId: string) {
         .from('products')
         .select(`
           *,
-          shop:shops(*),
+          shop:shops!inner(*),
           category:product_categories!products_category_id_fkey(*),
           subcategory:product_categories!products_subcategory_id_fkey(*)
         `)
         .eq('id', productId)
         .eq('is_active', true)
+        .eq('shops.is_active', true)
+        .eq('shops.verification_status', 'verified')
         .maybeSingle();
 
       if (fetchError) throw fetchError;

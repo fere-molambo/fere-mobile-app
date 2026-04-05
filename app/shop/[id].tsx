@@ -53,6 +53,7 @@ export default function ShopDetailScreen() {
         .select('*')
         .eq('id', id)
         .eq('is_active', true)
+        .eq('verification_status', 'verified')
         .maybeSingle();
 
       if (shopError) throw shopError;

@@ -32,9 +32,11 @@ export function useFilteredServices(filters: ServiceFilters, limit: number = 20)
         .from('services')
         .select(`
           *,
-          shop:shops(*)
+          shop:shops!inner(*)
         `)
         .eq('is_active', true)
+        .eq('shops.is_active', true)
+        .eq('shops.verification_status', 'verified')
         .order('created_at', { ascending: false })
         .range(reset ? 0 : offset, reset ? limit - 1 : offset + limit - 1);
 

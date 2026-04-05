@@ -20,9 +20,11 @@ export function useRecentServices(limit: number = 10, providerTypeId?: string) {
         .from('services')
         .select(`
           *,
-          shop:shops(*)
+          shop:shops!inner(*)
         `)
         .eq('is_active', true)
+        .eq('shops.is_active', true)
+        .eq('shops.verification_status', 'verified')
         .order('created_at', { ascending: false })
         .limit(limit);
 

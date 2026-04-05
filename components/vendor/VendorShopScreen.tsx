@@ -282,16 +282,16 @@ export default function VendorShopScreen({ userId, userRole }: Props) {
         <View style={styles.pendingBanner}>
           <Clock size={16} color="#0369a1" />
           <Text style={styles.pendingBannerText}>
-            Votre boutique est en cours de validation par notre equipe. Vous pouvez deja ajouter vos produits et services. Ils seront visibles une fois la boutique activee.
+            Votre boutique est en attente de validation par l'equipe Fere. Vous serez notifie une fois qu'elle sera activee.
           </Text>
         </View>
       )}
 
-      {!shop.is_active && shop.verification_status !== 'pending' && (
+      {shop.verification_status === 'rejected' && (
         <View style={styles.inactiveBanner}>
           <AlertTriangle size={16} color="#92400e" />
           <Text style={styles.inactiveBannerText}>
-            Boutique inactive - activez-la dans les parametres
+            Votre boutique a ete rejetee. Contactez le support pour plus d'informations.
           </Text>
         </View>
       )}
