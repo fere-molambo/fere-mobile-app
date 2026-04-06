@@ -1,17 +1,34 @@
 import 'react-native-get-random-values';
+import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
+import * as SplashScreen from 'expo-splash-screen';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
-import { AuthProvider } from '@/contexts/AuthContext';
+import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { CartProvider } from '@/contexts/CartContext';
 import { ChatProvider } from '@/contexts/ChatContext';
 import { AuthFlowProvider } from '@/contexts/AuthFlowContext';
 import CartModal from '@/components/CartModal';
 import NotificationHandler from '@/components/NotificationHandler';
 
+SplashScreen.preventAutoHideAsync();
+
+function SplashHider() {
+  const { loading } = useAuth();
+
+  useEffect(() => {
+    if (!loading) {
+      SplashScreen.hideAsync();
+    }
+  }, [loading]);
+
+  return null;
+}
+
 function RootLayoutInner() {
   return (
     <>
+      <SplashHider />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="index" />
         <Stack.Screen name="auth/login" />

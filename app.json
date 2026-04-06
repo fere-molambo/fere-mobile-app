@@ -1,15 +1,33 @@
 {
   "expo": {
-    "name": "bolt-expo-nativewind",
-    "slug": "bolt-expo-nativewind",
-    "version": "1.0.0",
+    "name": "fere",
+    "slug": "fere",
+    "version": "1.0.2",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
-    "scheme": "myapp",
+    "scheme": "fere",
     "userInterfaceStyle": "automatic",
     "newArchEnabled": true,
+    "splash": {
+      "image": "./assets/images/Logo_fere2.png",
+      "resizeMode": "contain",
+      "backgroundColor": "#003f2f"
+    },
     "ios": {
-      "supportsTablet": true
+      "supportsTablet": true,
+      "bundleIdentifier": "com.fere.app"
+    },
+    "android": {
+      "adaptiveIcon": {
+        "foregroundImage": "./assets/images/icon.png",
+        "backgroundColor": "#003f2f"
+      },
+      "package": "com.fere.app",
+      "splash": {
+        "image": "./assets/images/Logo_fere2.png",
+        "resizeMode": "contain",
+        "backgroundColor": "#003f2f"
+      }
     },
     "web": {
       "bundler": "metro",
@@ -25,7 +43,8 @@
       "expo-image-picker",
       "expo-location",
       "expo-document-picker",
-      "expo-notifications"
+      "expo-notifications",
+      "expo-splash-screen"
     ],
     "experiments": {
       "typedRoutes": true
