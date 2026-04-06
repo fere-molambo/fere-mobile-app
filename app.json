@@ -15,14 +15,14 @@
     },
     "ios": {
       "supportsTablet": true,
-      "bundleIdentifier": "com.fere.app"
+      "bundleIdentifier": "com.junior_molambo.fere"
     },
     "android": {
       "adaptiveIcon": {
         "foregroundImage": "./assets/images/icon.png",
         "backgroundColor": "#003f2f"
       },
-      "package": "com.fere.app",
+      "package": "com.junior_molambo.fere",
       "splash": {
         "image": "./assets/images/Logo_fere2.png",
         "resizeMode": "contain",
