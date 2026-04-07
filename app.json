@@ -7,7 +7,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "fere",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": true,
+    "newArchEnabled": false,
     "splash": {
       "image": "./assets/images/Logo_fere2.png",
       "resizeMode": "contain",
@@ -23,6 +23,7 @@
         "backgroundColor": "#003f2f"
       },
       "package": "com.junior_molambo.fere",
+      "minSdkVersion": 24,
       "splash": {
         "image": "./assets/images/Logo_fere2.png",
         "resizeMode": "contain",

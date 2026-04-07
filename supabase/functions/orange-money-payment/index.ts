@@ -24,8 +24,8 @@ function getOrangeMoneyAuthHeader(): string {
 }
 
 const OM_TOKEN_URL = "https://api.orange.com/oauth/v3/token";
-const OM_WEBPAYMENT_URL = "https://api.orange.com/orange-money-webpay/dev/v1/webpayment";
-const OM_TRANSACTION_STATUS_URL = "https://api.orange.com/orange-money-webpay/dev/v1/transactionstatus";
+const OM_WEBPAYMENT_URL = "https://api.orange.com/orange-money-webpay/prod/v1/webpayment";
+const OM_TRANSACTION_STATUS_URL = "https://api.orange.com/orange-money-webpay/prod/v1/transactionstatus";
 
 function jsonResponse(data: unknown, status = 200) {
   return new Response(JSON.stringify(data), {

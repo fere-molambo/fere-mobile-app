@@ -3,6 +3,7 @@ import { useEffect } from 'react';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
+import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
 import { CartProvider } from '@/contexts/CartContext';
@@ -60,14 +61,16 @@ export default function RootLayout() {
   useFrameworkReady();
 
   return (
-    <AuthProvider>
-      <AuthFlowProvider>
-        <CartProvider>
-          <ChatProvider>
-            <RootLayoutInner />
-          </ChatProvider>
-        </CartProvider>
-      </AuthFlowProvider>
-    </AuthProvider>
+    <SafeAreaProvider>
+      <AuthProvider>
+        <AuthFlowProvider>
+          <CartProvider>
+            <ChatProvider>
+              <RootLayoutInner />
+            </ChatProvider>
+          </CartProvider>
+        </AuthFlowProvider>
+      </AuthProvider>
+    </SafeAreaProvider>
   );
 }

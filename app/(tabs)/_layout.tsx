@@ -1,15 +1,17 @@
 import { Tabs } from 'expo-router';
-import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
-import { Hop as Home, Tag, ShoppingCart, MessageCircle, Settings, Package, Truck, Wallet, Store } from 'lucide-react-native';
+import { View, Text, StyleSheet } from 'react-native';
+import { Hop as Home, Tag, MessageCircle, Settings, Package, Truck, Wallet, Store } from 'lucide-react-native';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 import { useChat } from '@/contexts/ChatContext';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 export default function TabLayout() {
   const { userRole } = useAuth();
   const { getCartCount, openCart } = useCart();
   const { totalUnreadCount } = useChat();
   const cartCount = getCartCount();
+  const insets = useSafeAreaInsets();
 
   const isClient = userRole === 'membre';
   const isDriver = userRole === 'livreur';
@@ -22,8 +24,8 @@ export default function TabLayout() {
     tabBarStyle: {
       borderTopWidth: 1,
       borderTopColor: '#e5e5e5',
-      height: 60,
-      paddingBottom: 8,
+      height: 60 + insets.bottom,
+      paddingBottom: 8 + insets.bottom,
       paddingTop: 8,
     },
   };
