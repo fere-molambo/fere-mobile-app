@@ -25,7 +25,7 @@ import {
   formatPrice,
 } from '@/lib/bookingUtils';
 import { generateOrderNumber } from '@/lib/orderCalculations';
-import { savePendingPayment, getPaymentCallbackUrl, redirectToPayment } from '@/lib/paymentRedirect';
+import { getPaymentCallbackUrl, redirectToPayment } from '@/lib/paymentRedirect';
 import type { ServiceBooking, BookingStatus, BookingPaymentStatus } from '@/types/database';
 import TrackingMap from '@/components/tracking/TrackingMap';
 
@@ -203,16 +203,6 @@ export default function BookingDetailScreen() {
       }
 
       const effectiveRef = omResult.reference || paymentReference;
-
-      await savePendingPayment({
-        userId: user.id,
-        reference: effectiveRef,
-        paymentMode: 'service_booking_balance',
-        amount: payAmount,
-        bookingId: booking.id,
-        completionType,
-        payToken: omResult.pay_token,
-      });
 
       if (isWeb) {
         redirectToPayment(omResult.payment_url);

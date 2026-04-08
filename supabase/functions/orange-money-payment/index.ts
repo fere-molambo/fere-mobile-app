@@ -463,6 +463,27 @@ Deno.serve(async (req: Request) => {
         notifUrl
       );
 
+      const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
+
+      const paymentMode = metadata?.payment_type === "order" ? "checkout"
+        : metadata?.payment_type === "order_balance" ? "balance"
+        : metadata?.payment_type || "checkout";
+
+      const checkoutDataField = body.checkout_data
+        ? { ...body.checkout_data, pay_token: omResult.pay_token }
+        : { pay_token: omResult.pay_token };
+
+      await supabaseAdmin.from("pending_payments").insert({
+        user_id: metadata?.user_id || null,
+        reference: reference,
+        payment_mode: paymentMode,
+        amount: verifiedAmount,
+        booking_id: metadata?.booking_id || null,
+        order_id: metadata?.order_id || null,
+        completion_type: metadata?.completion_type || null,
+        checkout_data: checkoutDataField,
+      });
+
       return jsonResponse({
         payment_url: omResult.payment_url,
         pay_token: omResult.pay_token,

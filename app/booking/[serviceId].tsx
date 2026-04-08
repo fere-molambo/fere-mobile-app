@@ -27,7 +27,7 @@ import {
   type DayAvailability,
   type BookingPriceBreakdown,
 } from '@/lib/bookingUtils';
-import { savePendingPayment, getPaymentCallbackUrl, redirectToPayment } from '@/lib/paymentRedirect';
+import { getPaymentCallbackUrl, redirectToPayment } from '@/lib/paymentRedirect';
 import { sendNotificationToUser } from '@/lib/notificationService';
 
 export default function BookingScreen() {
@@ -266,15 +266,6 @@ export default function BookingScreen() {
         }
 
         const effectiveRef = omResult.reference || paymentReference;
-
-        await savePendingPayment({
-          userId: user.id,
-          reference: effectiveRef,
-          paymentMode: 'service_booking_advance',
-          amount: priceBreakdown.travelFee,
-          bookingId: booking.id,
-          payToken: omResult.pay_token,
-        });
 
         if (isWeb) {
           redirectToPayment(omResult.payment_url);
