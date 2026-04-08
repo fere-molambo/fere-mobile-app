@@ -473,16 +473,20 @@ Deno.serve(async (req: Request) => {
         ? { ...body.checkout_data, pay_token: omResult.pay_token }
         : { pay_token: omResult.pay_token };
 
-      await supabaseAdmin.from("pending_payments").insert({
-        user_id: metadata?.user_id || null,
-        reference: reference,
-        payment_mode: paymentMode,
-        amount: verifiedAmount,
-        booking_id: metadata?.booking_id || null,
-        order_id: metadata?.order_id || null,
-        completion_type: metadata?.completion_type || null,
-        checkout_data: checkoutDataField,
-      });
+      try {
+        await supabaseAdmin.from("pending_payments").insert({
+          user_id: metadata?.user_id || null,
+          reference: reference,
+          payment_mode: paymentMode,
+          amount: verifiedAmount,
+          booking_id: metadata?.booking_id || null,
+          order_id: metadata?.order_id || null,
+          completion_type: metadata?.completion_type || null,
+          checkout_data: checkoutDataField,
+        });
+      } catch (_insertErr) {
+        console.warn("pending_payments insert skipped:", _insertErr);
+      }
 
       return jsonResponse({
         payment_url: omResult.payment_url,

@@ -15,7 +15,7 @@ import { X, Clock, CircleCheck as CheckCircle, Truck, MapPin, Package, Circle as
 import { supabase } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { startConversation } from '@/lib/chatUtils';
-import { savePendingPayment, getPaymentCallbackUrl, redirectToPayment } from '@/lib/paymentRedirect';
+import { getPaymentCallbackUrl, redirectToPayment } from '@/lib/paymentRedirect';
 import {
   OrderDetail,
   DeliveryRequest,
@@ -348,15 +348,6 @@ export default function OrderDetailScreen() {
 
       if (result.payment_url) {
         const effectiveRef = result.reference || balanceRef;
-
-        await savePendingPayment({
-          userId: user.id,
-          reference: effectiveRef,
-          paymentMode: 'balance',
-          amount: order.balance_amount,
-          orderId: order.id,
-          payToken: result.pay_token,
-        });
 
         if (isWeb) {
           redirectToPayment(result.payment_url);
