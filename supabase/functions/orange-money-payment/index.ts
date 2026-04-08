@@ -473,19 +473,20 @@ Deno.serve(async (req: Request) => {
         ? { ...body.checkout_data, pay_token: omResult.pay_token }
         : { pay_token: omResult.pay_token };
 
-      try {
-        await supabaseAdmin.from("pending_payments").insert({
-          user_id: metadata?.user_id || null,
-          reference: reference,
-          payment_mode: paymentMode,
-          amount: verifiedAmount,
-          booking_id: metadata?.booking_id || null,
-          order_id: metadata?.order_id || null,
-          completion_type: metadata?.completion_type || null,
-          checkout_data: checkoutDataField,
-        });
-      } catch (_insertErr) {
-        console.warn("pending_payments insert skipped:", _insertErr);
+      const { error: insertErr } = await supabaseAdmin.from("pending_payments").insert({
+        user_id: metadata?.user_id || null,
+        reference: reference,
+        payment_mode: paymentMode,
+        amount: verifiedAmount,
+        booking_id: metadata?.booking_id || null,
+        order_id: metadata?.order_id || null,
+        completion_type: metadata?.completion_type || null,
+        checkout_data: checkoutDataField,
+      });
+
+      if (insertErr) {
+        console.error("pending_payments insert failed:", insertErr.message);
+        return jsonResponse({ error: "Erreur lors de la preparation du paiement. Veuillez reessayer." }, 500);
       }
 
       return jsonResponse({
