@@ -564,12 +564,10 @@ export interface Refund {
   user_id: string;
   status: string;
   refund_status: string;
-  paystack_refund_reference?: string;
   original_payment_reference?: string;
   processed_at?: string;
   processed_by?: string;
   failure_reason?: string;
-  paystack_refund_id?: string;
   created_at: string;
 }
 

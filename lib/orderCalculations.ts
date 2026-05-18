@@ -26,11 +26,8 @@ export interface CheckoutSummary {
   totalDeliveryFee: number;
   totalDeliveryCommission: number;
   totalProductCommission: number;
-  transactionFeeRate: number;
   advanceAmount: number;
-  advanceTransactionFee: number;
   balanceAmount: number;
-  balanceTransactionFee: number;
   grandTotal: number;
 }
 
@@ -46,8 +43,7 @@ export function calculateDeliveryFee(distanceMeters: number, fees: PlatformFees)
 
 export function buildCheckoutSummary(
   shopOrders: ShopOrder[],
-  fees: PlatformFees,
-  transactionFeeRate: number
+  fees: PlatformFees
 ): CheckoutSummary {
   let totalSubtotal = 0;
   let totalDeliveryFee = 0;
@@ -61,14 +57,8 @@ export function buildCheckoutSummary(
     totalProductCommission += order.productCommission;
   }
 
-  const advanceBeforeFee = totalDeliveryFee + totalDeliveryCommission + totalProductCommission;
-  const advanceTransactionFee = Math.round(advanceBeforeFee * (transactionFeeRate / 100));
-  const advanceAmount = advanceBeforeFee + advanceTransactionFee;
-
-  const balanceBeforeFee = totalSubtotal;
-  const balanceTransactionFee = Math.round(balanceBeforeFee * (transactionFeeRate / 100));
-  const balanceAmount = balanceBeforeFee + balanceTransactionFee;
-
+  const advanceAmount = totalDeliveryFee + totalDeliveryCommission + totalProductCommission;
+  const balanceAmount = totalSubtotal;
   const grandTotal = advanceAmount + balanceAmount;
 
   return {
@@ -77,11 +67,8 @@ export function buildCheckoutSummary(
     totalDeliveryFee,
     totalDeliveryCommission,
     totalProductCommission,
-    transactionFeeRate,
     advanceAmount,
-    advanceTransactionFee,
     balanceAmount,
-    balanceTransactionFee,
     grandTotal,
   };
 }

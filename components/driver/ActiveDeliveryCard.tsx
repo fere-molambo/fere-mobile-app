@@ -262,7 +262,7 @@ export default function ActiveDeliveryCard({ delivery, userId, onUpdate }: Activ
           <View style={styles.waitingTextContainer}>
             <Text style={styles.waitingTitle}>En attente de verification par le client</Text>
             <Text style={styles.waitingMessage}>
-              Le client doit verifier le colis et payer le solde via Paystack. La livraison sera automatiquement marquee comme terminee.
+              Le client doit verifier le colis et payer le solde via Orange Money. La livraison sera automatiquement marquee comme terminee.
             </Text>
           </View>
         </View>

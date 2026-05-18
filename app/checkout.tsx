@@ -206,7 +206,7 @@ export default function CheckoutScreen() {
       });
     }
 
-    const result = buildCheckoutSummary(shopOrders, platformFees, 1);
+    const result = buildCheckoutSummary(shopOrders, platformFees);
     setSummary(result);
   };
 
@@ -254,7 +254,6 @@ export default function CheckoutScreen() {
           advanceAmount: summary.advanceAmount,
           balanceAmount: summary.balanceAmount,
           grandTotal: summary.grandTotal,
-          transactionFeeRate: summary.transactionFeeRate,
           shopOrders: summary.shopOrders.map((so) => ({
             shop: {
               id: so.shop.id,
@@ -512,10 +511,6 @@ export default function CheckoutScreen() {
                 <Text style={styles.summaryLabelSmall}>Commission produit</Text>
                 <Text style={styles.summaryValueSmall}>{formatPrice(summary.totalProductCommission)} FCFA</Text>
               </View>
-              <View style={styles.summaryRow}>
-                <Text style={styles.summaryLabelSmall}>Frais transaction acompte ({summary.transactionFeeRate}%)</Text>
-                <Text style={styles.summaryValueSmall}>{formatPrice(summary.advanceTransactionFee)} FCFA</Text>
-              </View>
             </View>
 
             <View style={styles.advanceCard}>
@@ -530,7 +525,7 @@ export default function CheckoutScreen() {
                 <View style={styles.balanceContent}>
                   <Text style={styles.balanceTitle}>Solde à payer à la livraison</Text>
                   <Text style={styles.balanceAmount}>{formatPrice(summary.balanceAmount)} FCFA</Text>
-                  <Text style={styles.balanceSubtitle}>Produits + frais de transaction ({summary.transactionFeeRate}%)</Text>
+                  <Text style={styles.balanceSubtitle}>Montant des produits</Text>
                 </View>
               </View>
             </View>

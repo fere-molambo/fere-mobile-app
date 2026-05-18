@@ -7,7 +7,7 @@
     "icon": "./assets/images/icon.png",
     "scheme": "fere",
     "userInterfaceStyle": "automatic",
-    "newArchEnabled": false,
+    "newArchEnabled": true,
     "splash": {
       "image": "./assets/images/Logo_fere2.png",
       "resizeMode": "contain",

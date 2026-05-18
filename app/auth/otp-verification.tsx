@@ -109,7 +109,7 @@ export default function OtpVerificationScreen() {
           />
           <Text style={styles.title}>Verification</Text>
           <Text style={styles.subtitle}>
-            Un code SMS a ete envoye au {maskedPhone}
+            Un code SMS vous a ete envoye par Orange Mali au {maskedPhone}
           </Text>
         </View>
 

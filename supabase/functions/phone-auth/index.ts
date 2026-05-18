@@ -10,10 +10,13 @@ const corsHeaders = {
 
 const SUPABASE_URL = Deno.env.get("SUPABASE_URL") || "";
 const SUPABASE_SERVICE_ROLE_KEY = Deno.env.get("SUPABASE_SERVICE_ROLE_KEY") || "";
-const IKODDI_API_KEY = Deno.env.get("IKODDI_API_KEY") || "";
-const IKODDI_ORGANIZATION_ID = Deno.env.get("IKODDI_ORGANIZATION_ID") || "";
+const ORANGE_SMS_CLIENT_ID = Deno.env.get("ORANGE_SMS_CLIENT_ID") || "";
+const ORANGE_SMS_CLIENT_SECRET = Deno.env.get("ORANGE_SMS_CLIENT_SECRET") || "";
+const ORANGE_SMS_AUTH_HEADER = Deno.env.get("ORANGE_SMS_AUTH_HEADER") || "";
+const ORANGE_SMS_SENDER_ADDRESS = Deno.env.get("ORANGE_SMS_SENDER_ADDRESS") || "tel:+22376771321";
 
-const IKODDI_BASE = "https://api.ikoddi.com/api/v1/groups";
+const ORANGE_SMS_TOKEN_URL = "https://api.orange.com/oauth/v3/token";
+const ORANGE_SMS_BASE_URL = "https://api.orange.com/smsmessaging/v1/outbound";
 const OTP_EXPIRY_MINUTES = 10;
 const MAX_OTP_ATTEMPTS = 5;
 const OTP_RATE_LIMIT_SECONDS = 60;
@@ -70,30 +73,55 @@ function generateOtp(): string {
   return Array.from(digits, (d) => (d % 10).toString()).join("");
 }
 
-async function sendSmsViaIkoddi(
+function getOrangeSmsAuthHeader(): string {
+  if (ORANGE_SMS_CLIENT_ID && ORANGE_SMS_CLIENT_SECRET) {
+    const encoded = btoa(`${ORANGE_SMS_CLIENT_ID}:${ORANGE_SMS_CLIENT_SECRET}`);
+    return `Basic ${encoded}`;
+  }
+  return ORANGE_SMS_AUTH_HEADER;
+}
+
+async function getOrangeSmsToken(): Promise<string> {
+  const resp = await fetch(ORANGE_SMS_TOKEN_URL, {
+    method: "POST",
+    headers: {
+      "Authorization": getOrangeSmsAuthHeader(),
+      "Content-Type": "application/x-www-form-urlencoded",
+    },
+    body: "grant_type=client_credentials",
+  });
+  const data = await resp.json();
+  if (!data.access_token) {
+    throw new Error("Failed to obtain Orange SMS OAuth token");
+  }
+  return data.access_token;
+}
+
+async function sendSmsViaOrange(
   fullNumber: string,
   message: string,
-  phoneCode: string,
-  isoCode: string,
 ): Promise<{ ok: boolean; status: number; body: string }> {
-  const url = `${IKODDI_BASE}/${IKODDI_ORGANIZATION_ID}/sms`;
+  const token = await getOrangeSmsToken();
+  const senderAddress = encodeURIComponent(ORANGE_SMS_SENDER_ADDRESS);
+  const url = `${ORANGE_SMS_BASE_URL}/${senderAddress}/requests`;
+  const recipientAddress = `tel:+${fullNumber}`;
+
   const resp = await fetch(url, {
     method: "POST",
     headers: {
+      "Authorization": `Bearer ${token}`,
       "Content-Type": "application/json",
-      "x-api-key": IKODDI_API_KEY,
     },
     body: JSON.stringify({
-      sentTo: [fullNumber],
-      message,
-      from: "Ikoddi",
-      smsBroadCast: "OTP",
-      countryNumberCode: phoneCode,
-      countryStringCode: isoCode,
+      outboundSMSMessageRequest: {
+        address: recipientAddress,
+        senderAddress: ORANGE_SMS_SENDER_ADDRESS,
+        outboundSMSTextMessage: { message },
+      },
     }),
   });
   const body = await resp.text();
-  console.log(`[iKoddi SMS] to=${fullNumber} status=${resp.status} body=${body}`);
+  console.log(`[Orange SMS] to=${fullNumber} status=${resp.status} body=${body}`);
   return { ok: resp.ok, status: resp.status, body };
 }
 
@@ -232,7 +260,7 @@ async function handleRegister(
 
   const country = extractCountryInfo(phone);
   const message = `Votre code de verification Fere est : ${otp}. Valable ${OTP_EXPIRY_MINUTES} minutes.`;
-  await sendSmsViaIkoddi(country.fullNumber, message, country.phoneCode, country.isoCode);
+  await sendSmsViaOrange(country.fullNumber, message);
   await recordOtpSent(supabase, phone);
 
   return jsonResponse({ sms_sent: true });
@@ -504,7 +532,7 @@ async function handleResetPinRequest(
 
   const country = extractCountryInfo(phone);
   const message = `Votre code de reinitialisation Fere est : ${otp}. Valable ${OTP_EXPIRY_MINUTES} minutes.`;
-  await sendSmsViaIkoddi(country.fullNumber, message, country.phoneCode, country.isoCode);
+  await sendSmsViaOrange(country.fullNumber, message);
   await recordOtpSent(supabase, phone);
 
   return jsonResponse({ sms_sent: true });

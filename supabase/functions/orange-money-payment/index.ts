@@ -278,13 +278,9 @@ async function completeCheckout(
     const advanceAmount = Math.round(
       shopOrder.deliveryFee +
       shopOrder.deliveryCommission +
-      shopOrder.productCommission +
-      (shopOrder.deliveryFee + shopOrder.deliveryCommission + shopOrder.productCommission) *
-        (data.summary.transactionFeeRate / 100)
+      shopOrder.productCommission
     );
-    const balanceAmount = Math.round(
-      shopOrder.subtotal + shopOrder.subtotal * (data.summary.transactionFeeRate / 100)
-    );
+    const balanceAmount = shopOrder.subtotal;
 
     const { data: order, error: orderErr } = await supabase
       .from("orders")
