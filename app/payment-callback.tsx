@@ -10,6 +10,7 @@ import {
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { CircleCheck, CircleX, RefreshCw, ArrowLeft } from 'lucide-react-native';
 import { useCart } from '@/contexts/CartContext';
+import { supabase } from '@/lib/supabase';
 
 function extractReference(params: Record<string, any>): string {
   const fromParams = params.reference || params.trxref || '';
@@ -47,18 +48,11 @@ export default function PaymentCallbackScreen() {
   }, [reference]);
 
   const callCompletePayment = async (): Promise<any> => {
-    const resp = await fetch(
-      `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/orange-money-payment`,
-      {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-          'Authorization': `Bearer ${process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY}`,
-        },
-        body: JSON.stringify({ action: 'complete_payment', reference }),
-      }
-    );
-    return resp.json();
+    const { data, error } = await supabase.functions.invoke('orange-money-payment', {
+      body: { action: 'complete_payment', reference },
+    });
+    if (error) throw new Error(error.message || 'Erreur de verification');
+    return data;
   };
 
   const delay = (ms: number) => new Promise((r) => setTimeout(r, ms));

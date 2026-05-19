@@ -287,31 +287,23 @@ export default function CheckoutScreen() {
         },
       };
 
-      const omResp = await fetch(
-        `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/orange-money-payment`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY}`,
+      const { data: omResult, error: omError } = await supabase.functions.invoke('orange-money-payment', {
+        body: {
+          action: 'initialize',
+          amount: summary.advanceAmount,
+          reference: paymentReference,
+          metadata: {
+            payment_group_id: paymentGroupId,
+            user_id: user.id,
+            payment_type: 'order',
           },
-          body: JSON.stringify({
-            action: 'initialize',
-            amount: summary.advanceAmount,
-            reference: paymentReference,
-            metadata: {
-              payment_group_id: paymentGroupId,
-              user_id: user.id,
-              payment_type: 'order',
-            },
-            checkout_data: checkoutSnapshot,
-            return_url: callbackUrl || undefined,
-            cancel_url: callbackUrl || undefined,
-          }),
-        }
-      );
+          checkout_data: checkoutSnapshot,
+          return_url: callbackUrl || undefined,
+          cancel_url: callbackUrl || undefined,
+        },
+      });
 
-      const omResult = await omResp.json();
+      if (omError) throw new Error(omError.message || 'Erreur de paiement');
 
       if (!omResult.payment_url) {
         throw new Error(omResult.error || 'Erreur de paiement');

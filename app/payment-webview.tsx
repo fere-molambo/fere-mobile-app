@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Platform }
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { X, TriangleAlert as AlertTriangle } from 'lucide-react-native';
 import { useCart } from '@/contexts/CartContext';
+import { supabase } from '@/lib/supabase';
 
 let WebView: any = null;
 if (Platform.OS !== 'web') {
@@ -50,23 +51,15 @@ export default function PaymentWebViewScreen() {
     setVerifyError(null);
 
     try {
-      const resp = await fetch(
-        `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/orange-money-payment`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY}`,
-          },
-          body: JSON.stringify({
-            action: 'complete_payment',
-            reference,
-            pay_token: payToken,
-          }),
-        }
-      );
+      const { data: result, error: invokeError } = await supabase.functions.invoke('orange-money-payment', {
+        body: {
+          action: 'complete_payment',
+          reference,
+          pay_token: payToken,
+        },
+      });
 
-      const result = await resp.json();
+      if (invokeError) throw new Error(invokeError.message || 'Erreur de verification');
 
       if (result.success) {
         if (result.payment_mode === 'checkout') {

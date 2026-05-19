@@ -321,30 +321,22 @@ export default function OrderDetailScreen() {
       const isWeb = Platform.OS === 'web';
       const callbackUrl = isWeb ? getPaymentCallbackUrl(balanceRef) : undefined;
 
-      const resp = await fetch(
-        `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/orange-money-payment`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY}`,
+      const { data: result, error: invokeError } = await supabase.functions.invoke('orange-money-payment', {
+        body: {
+          action: 'initialize',
+          amount: order.balance_amount,
+          reference: balanceRef,
+          metadata: {
+            payment_type: 'order_balance',
+            order_id: order.id,
+            user_id: user.id,
           },
-          body: JSON.stringify({
-            action: 'initialize',
-            amount: order.balance_amount,
-            reference: balanceRef,
-            metadata: {
-              payment_type: 'order_balance',
-              order_id: order.id,
-              user_id: user.id,
-            },
-            return_url: callbackUrl || undefined,
-            cancel_url: callbackUrl || undefined,
-          }),
-        }
-      );
+          return_url: callbackUrl || undefined,
+          cancel_url: callbackUrl || undefined,
+        },
+      });
 
-      const result = await resp.json();
+      if (invokeError) throw new Error(invokeError.message || 'Erreur de paiement');
 
       if (result.payment_url) {
         const effectiveRef = result.reference || balanceRef;

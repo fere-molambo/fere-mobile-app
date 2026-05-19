@@ -226,29 +226,22 @@ export default function BookingScreen() {
 
         let omResult: any;
         try {
-          const omResp = await fetch(
-            `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/orange-money-payment`,
-            {
-              method: 'POST',
-              headers: {
-                'Content-Type': 'application/json',
-                'Authorization': `Bearer ${process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY}`,
+          const { data, error: omError } = await supabase.functions.invoke('orange-money-payment', {
+            body: {
+              action: 'initialize',
+              amount: priceBreakdown.travelFee,
+              reference: paymentReference,
+              metadata: {
+                booking_id: booking.id,
+                payment_type: 'service_booking_advance',
+                user_id: user.id,
               },
-              body: JSON.stringify({
-                action: 'initialize',
-                amount: priceBreakdown.travelFee,
-                reference: paymentReference,
-                metadata: {
-                  booking_id: booking.id,
-                  payment_type: 'service_booking_advance',
-                  user_id: user.id,
-                },
-                return_url: callbackUrl || undefined,
-                cancel_url: callbackUrl || undefined,
-              }),
-            }
-          );
-          omResult = await omResp.json();
+              return_url: callbackUrl || undefined,
+              cancel_url: callbackUrl || undefined,
+            },
+          });
+          if (omError) throw omError;
+          omResult = data;
         } catch (payErr: any) {
           await supabase
             .from('service_bookings')

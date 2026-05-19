@@ -172,31 +172,23 @@ export default function BookingDetailScreen() {
       const isWeb = Platform.OS === 'web';
       const callbackUrl = isWeb ? getPaymentCallbackUrl(paymentReference) : undefined;
 
-      const omResp = await fetch(
-        `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/orange-money-payment`,
-        {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-            'Authorization': `Bearer ${process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY}`,
+      const { data: omResult, error: omError } = await supabase.functions.invoke('orange-money-payment', {
+        body: {
+          action: 'initialize',
+          amount: payAmount,
+          reference: paymentReference,
+          metadata: {
+            booking_id: booking.id,
+            payment_type: 'service_booking_balance',
+            completion_type: completionType,
+            user_id: user.id,
           },
-          body: JSON.stringify({
-            action: 'initialize',
-            amount: payAmount,
-            reference: paymentReference,
-            metadata: {
-              booking_id: booking.id,
-              payment_type: 'service_booking_balance',
-              completion_type: completionType,
-              user_id: user.id,
-            },
-            return_url: callbackUrl || undefined,
-            cancel_url: callbackUrl || undefined,
-          }),
-        }
-      );
+          return_url: callbackUrl || undefined,
+          cancel_url: callbackUrl || undefined,
+        },
+      });
 
-      const omResult = await omResp.json();
+      if (omError) throw new Error(omError.message || 'Impossible de lancer le paiement');
 
       if (!omResult.payment_url) {
         throw new Error(omResult.error || 'Impossible de lancer le paiement');
