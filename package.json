@@ -61,5 +61,10 @@
     "patch-package": "^8.0.1",
     "postinstall-postinstall": "^2.1.0",
     "typescript": "~5.9.2"
+  },
+  "expo": {
+    "install": {
+      "exclude": ["react-native-worklets"]
+    }
   }
 }
