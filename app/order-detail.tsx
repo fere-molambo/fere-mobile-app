@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { X, Clock, CircleCheck as CheckCircle, Truck, MapPin, Package, Circle as XCircle, ChevronLeft, Send, ShieldCheck, Paperclip, Info, MessageCircle } from 'lucide-react-native';
-import { supabase } from '@/lib/supabase';
+import { supabase, ensureValidSession } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { startConversation } from '@/lib/chatUtils';
 import { getPaymentCallbackUrl, redirectToPayment } from '@/lib/paymentRedirect';
@@ -320,6 +320,8 @@ export default function OrderDetailScreen() {
       const balanceRef = `BAL_${order.id.substring(0, 8)}_${Date.now()}`;
       const isWeb = Platform.OS === 'web';
       const callbackUrl = isWeb ? getPaymentCallbackUrl(balanceRef) : undefined;
+
+      await ensureValidSession();
 
       const { data: result, error: invokeError } = await supabase.functions.invoke('orange-money-payment', {
         body: {

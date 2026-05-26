@@ -61,3 +61,25 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
     detectSessionInUrl: false,
   },
 });
+
+/**
+ * Ensures the current Supabase session has a valid, non-expired access token.
+ * Call before supabase.functions.invoke() to prevent 403 "missing sub claim" on Android.
+ */
+export async function ensureValidSession(): Promise<void> {
+  const { data: { session } } = await supabase.auth.getSession();
+
+  if (!session) {
+    throw new Error('Session expirée. Veuillez vous reconnecter.');
+  }
+
+  const exp = session.expires_at;
+  const now = Math.floor(Date.now() / 1000);
+
+  if (exp && exp - now < 60) {
+    const { error } = await supabase.auth.refreshSession();
+    if (error) {
+      throw new Error('Session expirée. Veuillez vous reconnecter.');
+    }
+  }
+}

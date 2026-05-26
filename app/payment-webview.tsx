@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Platform }
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { X, TriangleAlert as AlertTriangle } from 'lucide-react-native';
 import { useCart } from '@/contexts/CartContext';
-import { supabase } from '@/lib/supabase';
+import { supabase, ensureValidSession } from '@/lib/supabase';
 
 let WebView: any = null;
 if (Platform.OS !== 'web') {
@@ -51,6 +51,8 @@ export default function PaymentWebViewScreen() {
     setVerifyError(null);
 
     try {
+      await ensureValidSession();
+
       const { data: result, error: invokeError } = await supabase.functions.invoke('orange-money-payment', {
         body: {
           action: 'complete_payment',

@@ -10,7 +10,7 @@ import {
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { CircleCheck, CircleX, RefreshCw, ArrowLeft } from 'lucide-react-native';
 import { useCart } from '@/contexts/CartContext';
-import { supabase } from '@/lib/supabase';
+import { supabase, ensureValidSession } from '@/lib/supabase';
 
 function extractReference(params: Record<string, any>): string {
   const fromParams = params.reference || params.trxref || '';
@@ -48,6 +48,8 @@ export default function PaymentCallbackScreen() {
   }, [reference]);
 
   const callCompletePayment = async (): Promise<any> => {
+    await ensureValidSession();
+
     const { data, error } = await supabase.functions.invoke('orange-money-payment', {
       body: { action: 'complete_payment', reference },
     });

@@ -13,7 +13,7 @@ import {
 } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { ArrowLeft, Plus, MapPin, Phone, TriangleAlert as AlertTriangle, Info, Store, Package, Truck } from 'lucide-react-native';
-import { supabase } from '@/lib/supabase';
+import { supabase, ensureValidSession } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 
@@ -286,6 +286,8 @@ export default function CheckoutScreen() {
           })),
         },
       };
+
+      await ensureValidSession();
 
       const { data: omResult, error: omError } = await supabase.functions.invoke('orange-money-payment', {
         body: {
