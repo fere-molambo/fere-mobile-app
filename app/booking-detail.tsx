@@ -178,11 +178,11 @@ export default function BookingDetailScreen() {
       const { data: omResult, error: omError } = await supabase.functions.invoke('orange-money-payment', {
         body: {
           action: 'initialize',
+          payment_type: 'service_booking',
           amount: payAmount,
           reference: paymentReference,
           metadata: {
             booking_id: booking.id,
-            payment_type: 'service_booking_balance',
             completion_type: completionType,
             user_id: user.id,
           },

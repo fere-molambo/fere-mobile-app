@@ -293,12 +293,12 @@ export default function CheckoutScreen() {
       const { data: omResult, error: omError } = await supabase.functions.invoke('orange-money-payment', {
         body: {
           action: 'initialize',
+          payment_type: 'order',
           amount: summary.advanceAmount,
           reference: paymentReference,
           metadata: {
             payment_group_id: paymentGroupId,
             user_id: user.id,
-            payment_type: 'order',
           },
           checkout_data: checkoutSnapshot,
           return_url: returnUrl,

@@ -327,10 +327,10 @@ export default function OrderDetailScreen() {
       const { data: result, error: invokeError } = await supabase.functions.invoke('orange-money-payment', {
         body: {
           action: 'initialize',
+          payment_type: 'order_balance',
           amount: order.balance_amount,
           reference: balanceRef,
           metadata: {
-            payment_type: 'order_balance',
             order_id: order.id,
             user_id: user.id,
           },

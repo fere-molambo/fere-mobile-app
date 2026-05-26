@@ -12,7 +12,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { ArrowLeft, Calendar, Clock, MapPin, Plus, ChevronLeft, ChevronRight, TriangleAlert as AlertTriangle, Truck, Info } from 'lucide-react-native';
-import { supabase } from '@/lib/supabase';
+import { supabase, ensureValidSession } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import AddressModal from '@/components/modals/AddressModal';
 import { generateOrderNumber } from '@/lib/orderCalculations';
@@ -27,7 +27,7 @@ import {
   type DayAvailability,
   type BookingPriceBreakdown,
 } from '@/lib/bookingUtils';
-import { getPaymentCallbackUrl, redirectToPayment } from '@/lib/paymentRedirect';
+import { getPaymentCallbackUrl, getMobileReturnUrl, getMobileCancelUrl, redirectToPayment } from '@/lib/paymentRedirect';
 import { sendNotificationToUser } from '@/lib/notificationService';
 
 export default function BookingScreen() {
@@ -222,22 +222,25 @@ export default function BookingScreen() {
       if (priceBreakdown.travelFee > 0) {
         const paymentReference = generateOrderNumber();
         const isWeb = Platform.OS === 'web';
-        const callbackUrl = isWeb ? getPaymentCallbackUrl(paymentReference) : undefined;
+        const returnUrl = isWeb ? getPaymentCallbackUrl(paymentReference) : getMobileReturnUrl(paymentReference);
+        const cancelUrl = isWeb ? getPaymentCallbackUrl(paymentReference) : getMobileCancelUrl(paymentReference);
+
+        await ensureValidSession();
 
         let omResult: any;
         try {
           const { data, error: omError } = await supabase.functions.invoke('orange-money-payment', {
             body: {
               action: 'initialize',
+              payment_type: 'service_booking',
               amount: priceBreakdown.travelFee,
               reference: paymentReference,
               metadata: {
                 booking_id: booking.id,
-                payment_type: 'service_booking_advance',
                 user_id: user.id,
               },
-              return_url: callbackUrl || undefined,
-              cancel_url: callbackUrl || undefined,
+              return_url: returnUrl,
+              cancel_url: cancelUrl,
             },
           });
           if (omError) throw omError;
