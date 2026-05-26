@@ -23,11 +23,19 @@
         "backgroundColor": "#003f2f"
       },
       "package": "com.junior_molambo.fere",
+      "versionCode": 4,
       "splash": {
         "image": "./assets/images/Logo_fere2.png",
         "resizeMode": "contain",
         "backgroundColor": "#003f2f"
-      }
+      },
+      "intentFilters": [
+        {
+          "action": "VIEW",
+          "data": [{ "scheme": "fere", "host": "payment" }],
+          "category": ["BROWSABLE", "DEFAULT"]
+        }
+      ]
     },
     "web": {
       "bundler": "metro",

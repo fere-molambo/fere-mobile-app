@@ -33,9 +33,9 @@ export default function PaymentWebViewScreen() {
 
   const handleNavigationChange = async (navState: any) => {
     const currentUrl = navState.url || '';
-    if (isPaymentReturnUrl(currentUrl)) {
+    if (currentUrl.startsWith('fere://payment/callback') || isPaymentReturnUrl(currentUrl)) {
       await verifyAndComplete();
-    } else if (isPaymentCancelUrl(currentUrl)) {
+    } else if (currentUrl.startsWith('fere://payment/cancel') || isPaymentCancelUrl(currentUrl)) {
       handleCancel();
     }
   };
@@ -176,6 +176,14 @@ export default function PaymentWebViewScreen() {
         onNavigationStateChange={handleNavigationChange}
         onShouldStartLoadWithRequest={(request: any) => {
           const navUrl = request.url || '';
+          if (navUrl.startsWith('fere://payment/callback')) {
+            verifyAndComplete();
+            return false;
+          }
+          if (navUrl.startsWith('fere://payment/cancel')) {
+            handleCancel();
+            return false;
+          }
           if (isPaymentReturnUrl(navUrl)) {
             verifyAndComplete();
             return false;

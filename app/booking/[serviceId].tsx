@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { ArrowLeft, Calendar, Clock, MapPin, Plus, ChevronLeft, ChevronRight, TriangleAlert as AlertTriangle, Truck, Info } from 'lucide-react-native';
+import Constants from 'expo-constants';
 import { supabase, ensureValidSession } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import AddressModal from '@/components/modals/AddressModal';
@@ -241,6 +242,7 @@ export default function BookingScreen() {
               },
               return_url: returnUrl,
               cancel_url: cancelUrl,
+              app_version: Constants.expoConfig?.android?.versionCode || Constants.expoConfig?.version,
             },
           });
           if (omError) throw omError;

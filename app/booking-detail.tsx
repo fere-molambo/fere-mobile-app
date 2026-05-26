@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { ArrowLeft, MapPin, Phone, MessageCircle, CircleCheck as CheckCircle, Circle as XCircle, Truck, TriangleAlert as AlertTriangle, Calendar } from 'lucide-react-native';
+import Constants from 'expo-constants';
 import { supabase, ensureValidSession } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import BookingStatusBadge from '@/components/BookingStatusBadge';
@@ -188,6 +189,7 @@ export default function BookingDetailScreen() {
           },
           return_url: returnUrl,
           cancel_url: cancelUrl,
+          app_version: Constants.expoConfig?.android?.versionCode || Constants.expoConfig?.version,
         },
       });
 

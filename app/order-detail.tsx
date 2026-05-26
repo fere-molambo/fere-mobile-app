@@ -12,6 +12,7 @@ import {
 } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { X, Clock, CircleCheck as CheckCircle, Truck, MapPin, Package, Circle as XCircle, ChevronLeft, Send, ShieldCheck, Paperclip, Info, MessageCircle } from 'lucide-react-native';
+import Constants from 'expo-constants';
 import { supabase, ensureValidSession } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { startConversation } from '@/lib/chatUtils';
@@ -336,6 +337,7 @@ export default function OrderDetailScreen() {
           },
           return_url: returnUrl,
           cancel_url: cancelUrl,
+          app_version: Constants.expoConfig?.android?.versionCode || Constants.expoConfig?.version,
         },
       });
 

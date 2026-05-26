@@ -13,6 +13,7 @@ import {
 } from 'react-native';
 import { useRouter, Stack } from 'expo-router';
 import { ArrowLeft, Plus, MapPin, Phone, TriangleAlert as AlertTriangle, Info, Store, Package, Truck } from 'lucide-react-native';
+import Constants from 'expo-constants';
 import { supabase, ensureValidSession } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
@@ -303,6 +304,7 @@ export default function CheckoutScreen() {
           checkout_data: checkoutSnapshot,
           return_url: returnUrl,
           cancel_url: cancelUrl,
+          app_version: Constants.expoConfig?.android?.versionCode || Constants.expoConfig?.version,
         },
       });
 
