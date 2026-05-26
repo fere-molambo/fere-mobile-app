@@ -4,6 +4,7 @@ import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { X, TriangleAlert as AlertTriangle } from 'lucide-react-native';
 import { useCart } from '@/contexts/CartContext';
 import { supabase, ensureValidSession } from '@/lib/supabase';
+import { isPaymentReturnUrl, isPaymentCancelUrl } from '@/lib/paymentRedirect';
 
 let WebView: any = null;
 if (Platform.OS !== 'web') {
@@ -32,14 +33,9 @@ export default function PaymentWebViewScreen() {
 
   const handleNavigationChange = async (navState: any) => {
     const currentUrl = navState.url || '';
-    if (
-      currentUrl.includes('payment-callback') ||
-      currentUrl.includes('return') ||
-      currentUrl.includes('reference=')
-    ) {
+    if (isPaymentReturnUrl(currentUrl)) {
       await verifyAndComplete();
-    }
-    if (currentUrl.includes('cancel') || currentUrl.includes('close')) {
+    } else if (isPaymentCancelUrl(currentUrl)) {
       handleCancel();
     }
   };
@@ -178,6 +174,18 @@ export default function PaymentWebViewScreen() {
       <WebView
         source={{ uri: url }}
         onNavigationStateChange={handleNavigationChange}
+        onShouldStartLoadWithRequest={(request: any) => {
+          const navUrl = request.url || '';
+          if (isPaymentReturnUrl(navUrl)) {
+            verifyAndComplete();
+            return false;
+          }
+          if (isPaymentCancelUrl(navUrl)) {
+            handleCancel();
+            return false;
+          }
+          return true;
+        }}
         onLoadEnd={() => setLoading(false)}
         style={styles.webview}
         javaScriptEnabled

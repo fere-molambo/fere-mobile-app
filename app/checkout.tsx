@@ -28,7 +28,7 @@ import {
   type ShopOrder,
   type CheckoutSummary,
 } from '@/lib/orderCalculations';
-import { getPaymentCallbackUrl, redirectToPayment } from '@/lib/paymentRedirect';
+import { getPaymentCallbackUrl, getMobileReturnUrl, getMobileCancelUrl, redirectToPayment } from '@/lib/paymentRedirect';
 
 function formatPrice(n: number) {
   return n.toLocaleString('fr-FR').replace(/\s/g, ' ');
@@ -229,7 +229,8 @@ export default function CheckoutScreen() {
       const paymentGroupId = uuidv4();
       const paymentReference = generateOrderNumber();
       const isWeb = Platform.OS === 'web';
-      const callbackUrl = isWeb ? getPaymentCallbackUrl(paymentReference) : undefined;
+      const returnUrl = isWeb ? getPaymentCallbackUrl(paymentReference) : getMobileReturnUrl(paymentReference);
+      const cancelUrl = isWeb ? getPaymentCallbackUrl(paymentReference) : getMobileCancelUrl(paymentReference);
 
       const deliveryAddr = addresses.find((a) => a.id === selectedAddressId);
 
@@ -300,8 +301,8 @@ export default function CheckoutScreen() {
             payment_type: 'order',
           },
           checkout_data: checkoutSnapshot,
-          return_url: callbackUrl || undefined,
-          cancel_url: callbackUrl || undefined,
+          return_url: returnUrl,
+          cancel_url: cancelUrl,
         },
       });
 

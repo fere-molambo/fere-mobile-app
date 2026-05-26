@@ -15,7 +15,7 @@ import { X, Clock, CircleCheck as CheckCircle, Truck, MapPin, Package, Circle as
 import { supabase, ensureValidSession } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { startConversation } from '@/lib/chatUtils';
-import { getPaymentCallbackUrl, redirectToPayment } from '@/lib/paymentRedirect';
+import { getPaymentCallbackUrl, getMobileReturnUrl, getMobileCancelUrl, redirectToPayment } from '@/lib/paymentRedirect';
 import {
   OrderDetail,
   DeliveryRequest,
@@ -319,7 +319,8 @@ export default function OrderDetailScreen() {
     try {
       const balanceRef = `BAL_${order.id.substring(0, 8)}_${Date.now()}`;
       const isWeb = Platform.OS === 'web';
-      const callbackUrl = isWeb ? getPaymentCallbackUrl(balanceRef) : undefined;
+      const returnUrl = isWeb ? getPaymentCallbackUrl(balanceRef) : getMobileReturnUrl(balanceRef);
+      const cancelUrl = isWeb ? getPaymentCallbackUrl(balanceRef) : getMobileCancelUrl(balanceRef);
 
       await ensureValidSession();
 
@@ -333,8 +334,8 @@ export default function OrderDetailScreen() {
             order_id: order.id,
             user_id: user.id,
           },
-          return_url: callbackUrl || undefined,
-          cancel_url: callbackUrl || undefined,
+          return_url: returnUrl,
+          cancel_url: cancelUrl,
         },
       });
 

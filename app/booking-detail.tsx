@@ -25,7 +25,7 @@ import {
   formatPrice,
 } from '@/lib/bookingUtils';
 import { generateOrderNumber } from '@/lib/orderCalculations';
-import { getPaymentCallbackUrl, redirectToPayment } from '@/lib/paymentRedirect';
+import { getPaymentCallbackUrl, getMobileReturnUrl, getMobileCancelUrl, redirectToPayment } from '@/lib/paymentRedirect';
 import type { ServiceBooking, BookingStatus, BookingPaymentStatus } from '@/types/database';
 import TrackingMap from '@/components/tracking/TrackingMap';
 
@@ -170,7 +170,8 @@ export default function BookingDetailScreen() {
 
       const paymentReference = generateOrderNumber();
       const isWeb = Platform.OS === 'web';
-      const callbackUrl = isWeb ? getPaymentCallbackUrl(paymentReference) : undefined;
+      const returnUrl = isWeb ? getPaymentCallbackUrl(paymentReference) : getMobileReturnUrl(paymentReference);
+      const cancelUrl = isWeb ? getPaymentCallbackUrl(paymentReference) : getMobileCancelUrl(paymentReference);
 
       await ensureValidSession();
 
@@ -185,8 +186,8 @@ export default function BookingDetailScreen() {
             completion_type: completionType,
             user_id: user.id,
           },
-          return_url: callbackUrl || undefined,
-          cancel_url: callbackUrl || undefined,
+          return_url: returnUrl,
+          cancel_url: cancelUrl,
         },
       });
 
