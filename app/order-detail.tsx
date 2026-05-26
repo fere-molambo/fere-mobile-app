@@ -13,7 +13,7 @@ import {
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
 import { X, Clock, CircleCheck as CheckCircle, Truck, MapPin, Package, Circle as XCircle, ChevronLeft, Send, ShieldCheck, Paperclip, Info, MessageCircle } from 'lucide-react-native';
 import Constants from 'expo-constants';
-import { supabase, ensureValidSession } from '@/lib/supabase';
+import { supabase, invokeWithAuth } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { startConversation } from '@/lib/chatUtils';
 import { getPaymentCallbackUrl, getMobileReturnUrl, getMobileCancelUrl, redirectToPayment } from '@/lib/paymentRedirect';
@@ -323,22 +323,18 @@ export default function OrderDetailScreen() {
       const returnUrl = isWeb ? getPaymentCallbackUrl(balanceRef) : getMobileReturnUrl(balanceRef);
       const cancelUrl = isWeb ? getPaymentCallbackUrl(balanceRef) : getMobileCancelUrl(balanceRef);
 
-      await ensureValidSession();
-
-      const { data: result, error: invokeError } = await supabase.functions.invoke('orange-money-payment', {
-        body: {
-          action: 'initialize',
-          payment_type: 'order_balance',
-          amount: order.balance_amount,
-          reference: balanceRef,
-          metadata: {
-            order_id: order.id,
-            user_id: user.id,
-          },
-          return_url: returnUrl,
-          cancel_url: cancelUrl,
-          app_version: Constants.expoConfig?.android?.versionCode || Constants.expoConfig?.version,
+      const { data: result, error: invokeError } = await invokeWithAuth('orange-money-payment', {
+        action: 'initialize',
+        payment_type: 'order_balance',
+        amount: order.balance_amount,
+        reference: balanceRef,
+        metadata: {
+          order_id: order.id,
+          user_id: user.id,
         },
+        return_url: returnUrl,
+        cancel_url: cancelUrl,
+        app_version: Constants.expoConfig?.android?.versionCode || Constants.expoConfig?.version,
       });
 
       if (invokeError) throw new Error(invokeError.message || 'Erreur de paiement');

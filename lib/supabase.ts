@@ -64,10 +64,10 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
 
 /**
  * Ensures the current Supabase session has a valid, non-expired access token.
- * Call before supabase.functions.invoke() to prevent 403 "missing sub claim" on Android.
+ * Returns the access token so callers can pass it explicitly if needed.
  */
-export async function ensureValidSession(): Promise<void> {
-  const { data: { session } } = await supabase.auth.getSession();
+export async function ensureValidSession(): Promise<string> {
+  let { data: { session } } = await supabase.auth.getSession();
 
   if (!session) {
     throw new Error('Session expirée. Veuillez vous reconnecter.');
@@ -77,9 +77,29 @@ export async function ensureValidSession(): Promise<void> {
   const now = Math.floor(Date.now() / 1000);
 
   if (exp && exp - now < 60) {
-    const { error } = await supabase.auth.refreshSession();
-    if (error) {
+    const { data, error } = await supabase.auth.refreshSession();
+    if (error || !data.session) {
       throw new Error('Session expirée. Veuillez vous reconnecter.');
     }
+    session = data.session;
   }
+
+  return session.access_token;
+}
+
+/**
+ * Invokes a Supabase edge function with an explicit Authorization header
+ * to guarantee the user's JWT is sent (not the anon key).
+ */
+export async function invokeWithAuth(
+  functionName: string,
+  body: Record<string, unknown>
+) {
+  const accessToken = await ensureValidSession();
+  return supabase.functions.invoke(functionName, {
+    body,
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
 }

@@ -3,7 +3,7 @@ import { View, Text, StyleSheet, ActivityIndicator, TouchableOpacity, Platform }
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { X, TriangleAlert as AlertTriangle } from 'lucide-react-native';
 import { useCart } from '@/contexts/CartContext';
-import { supabase, ensureValidSession } from '@/lib/supabase';
+import { invokeWithAuth } from '@/lib/supabase';
 import { isPaymentReturnUrl, isPaymentCancelUrl } from '@/lib/paymentRedirect';
 
 let WebView: any = null;
@@ -47,14 +47,10 @@ export default function PaymentWebViewScreen() {
     setVerifyError(null);
 
     try {
-      await ensureValidSession();
-
-      const { data: result, error: invokeError } = await supabase.functions.invoke('orange-money-payment', {
-        body: {
-          action: 'complete_payment',
-          reference,
-          pay_token: payToken,
-        },
+      const { data: result, error: invokeError } = await invokeWithAuth('orange-money-payment', {
+        action: 'complete_payment',
+        reference,
+        pay_token: payToken,
       });
 
       if (invokeError) throw new Error(invokeError.message || 'Erreur de verification');

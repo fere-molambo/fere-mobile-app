@@ -14,7 +14,7 @@ import {
 import { useRouter, Stack } from 'expo-router';
 import { ArrowLeft, Plus, MapPin, Phone, TriangleAlert as AlertTriangle, Info, Store, Package, Truck } from 'lucide-react-native';
 import Constants from 'expo-constants';
-import { supabase, ensureValidSession } from '@/lib/supabase';
+import { supabase, invokeWithAuth } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
 
@@ -289,23 +289,19 @@ export default function CheckoutScreen() {
         },
       };
 
-      await ensureValidSession();
-
-      const { data: omResult, error: omError } = await supabase.functions.invoke('orange-money-payment', {
-        body: {
-          action: 'initialize',
-          payment_type: 'order',
-          amount: summary.advanceAmount,
-          reference: paymentReference,
-          metadata: {
-            payment_group_id: paymentGroupId,
-            user_id: user.id,
-          },
-          checkout_data: checkoutSnapshot,
-          return_url: returnUrl,
-          cancel_url: cancelUrl,
-          app_version: Constants.expoConfig?.android?.versionCode || Constants.expoConfig?.version,
+      const { data: omResult, error: omError } = await invokeWithAuth('orange-money-payment', {
+        action: 'initialize',
+        payment_type: 'order',
+        amount: summary.advanceAmount,
+        reference: paymentReference,
+        metadata: {
+          payment_group_id: paymentGroupId,
+          user_id: user.id,
         },
+        checkout_data: checkoutSnapshot,
+        return_url: returnUrl,
+        cancel_url: cancelUrl,
+        app_version: Constants.expoConfig?.android?.versionCode || Constants.expoConfig?.version,
       });
 
       if (omError) throw new Error(omError.message || 'Erreur de paiement');

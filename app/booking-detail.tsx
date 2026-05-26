@@ -13,7 +13,7 @@ import {
 import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { ArrowLeft, MapPin, Phone, MessageCircle, CircleCheck as CheckCircle, Circle as XCircle, Truck, TriangleAlert as AlertTriangle, Calendar } from 'lucide-react-native';
 import Constants from 'expo-constants';
-import { supabase, ensureValidSession } from '@/lib/supabase';
+import { supabase, invokeWithAuth } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
 import BookingStatusBadge from '@/components/BookingStatusBadge';
 import PaymentStatusBadge from '@/components/PaymentStatusBadge';
@@ -174,23 +174,19 @@ export default function BookingDetailScreen() {
       const returnUrl = isWeb ? getPaymentCallbackUrl(paymentReference) : getMobileReturnUrl(paymentReference);
       const cancelUrl = isWeb ? getPaymentCallbackUrl(paymentReference) : getMobileCancelUrl(paymentReference);
 
-      await ensureValidSession();
-
-      const { data: omResult, error: omError } = await supabase.functions.invoke('orange-money-payment', {
-        body: {
-          action: 'initialize',
-          payment_type: 'service_booking',
-          amount: payAmount,
-          reference: paymentReference,
-          metadata: {
-            booking_id: booking.id,
-            completion_type: completionType,
-            user_id: user.id,
-          },
-          return_url: returnUrl,
-          cancel_url: cancelUrl,
-          app_version: Constants.expoConfig?.android?.versionCode || Constants.expoConfig?.version,
+      const { data: omResult, error: omError } = await invokeWithAuth('orange-money-payment', {
+        action: 'initialize',
+        payment_type: 'service_booking',
+        amount: payAmount,
+        reference: paymentReference,
+        metadata: {
+          booking_id: booking.id,
+          completion_type: completionType,
+          user_id: user.id,
         },
+        return_url: returnUrl,
+        cancel_url: cancelUrl,
+        app_version: Constants.expoConfig?.android?.versionCode || Constants.expoConfig?.version,
       });
 
       if (omError) throw new Error(omError.message || 'Impossible de lancer le paiement');
