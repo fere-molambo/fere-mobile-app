@@ -1,8 +1,10 @@
 import 'react-native-get-random-values';
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
+import { Platform } from 'react-native';
 import { Stack } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import * as SplashScreen from 'expo-splash-screen';
+import * as SecureStore from 'expo-secure-store';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
 import { useFrameworkReady } from '@/hooks/useFrameworkReady';
 import { AuthProvider, useAuth } from '@/contexts/AuthContext';
@@ -57,8 +59,37 @@ function RootLayoutInner() {
   );
 }
 
+function usePaymentCacheCleanup() {
+  const didClean = useRef(false);
+  useEffect(() => {
+    if (didClean.current) return;
+    didClean.current = true;
+
+    const staleKeys = [
+      'om_order_id',
+      'om_pay_token',
+      'om_payment_type',
+      'om_related_id',
+      'paystack_reference',
+    ];
+
+    (async () => {
+      if (Platform.OS === 'web') {
+        staleKeys.forEach((k) => {
+          try { localStorage.removeItem(k); } catch {}
+        });
+      } else {
+        for (const key of staleKeys) {
+          try { await SecureStore.deleteItemAsync(key); } catch {}
+        }
+      }
+    })();
+  }, []);
+}
+
 export default function RootLayout() {
   useFrameworkReady();
+  usePaymentCacheCleanup();
 
   return (
     <SafeAreaProvider>
