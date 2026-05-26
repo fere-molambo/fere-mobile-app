@@ -1,7 +1,8 @@
 import { Platform } from 'react-native';
 
-const MOBILE_CALLBACK_BASE = 'https://fere.app/payment-callback';
-const MOBILE_CANCEL_BASE = 'https://fere.app/payment-cancel';
+const APP_SCHEME = 'fere';
+const MOBILE_CALLBACK_BASE = `${APP_SCHEME}://payment/callback`;
+const MOBILE_CANCEL_BASE = `${APP_SCHEME}://payment/cancel`;
 
 export function getPaymentCallbackUrl(reference?: string): string {
   const origin = Platform.OS === 'web' && typeof window !== 'undefined'
@@ -24,6 +25,7 @@ export function getMobileCancelUrl(reference: string): string {
 
 export function isPaymentReturnUrl(url: string): boolean {
   return url.includes('payment-callback') ||
+    url.includes('payment/callback') ||
     url.includes('fere.app/payment') ||
     url.includes('action=return') ||
     (url.includes('reference=') && (url.includes('orange-money') || url.includes('functions/v1')));
@@ -31,8 +33,8 @@ export function isPaymentReturnUrl(url: string): boolean {
 
 export function isPaymentCancelUrl(url: string): boolean {
   return url.includes('payment-cancel') ||
-    url.includes('action=cancelled') ||
-    url.includes('cancel');
+    url.includes('payment/cancel') ||
+    url.includes('action=cancelled');
 }
 
 export function redirectToPayment(paymentUrl: string) {
