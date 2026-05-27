@@ -59,8 +59,10 @@ export default function LoginScreen() {
     setLoading(true);
     try {
       const result = await phoneAuth.login(fullPhone, pin);
-      if (result.session?.access_token && result.session?.refresh_token) {
-        await setSessionFromTokens(result.session.access_token, result.session.refresh_token);
+      const accessToken = result.session?.access_token || (result as any).access_token;
+      const refreshToken = result.session?.refresh_token || (result as any).refresh_token;
+      if (accessToken && refreshToken) {
+        await setSessionFromTokens(accessToken, refreshToken);
         router.replace('/(tabs)');
       } else {
         setError('Reponse invalide du serveur. Veuillez reessayer.');

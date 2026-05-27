@@ -230,16 +230,15 @@ export default function BookingScreen() {
         try {
           const { data, error: omError } = await invokeWithAuth('orange-money-payment', {
             action: 'initialize',
-            payment_type: 'service_booking',
             amount: priceBreakdown.travelFee,
             reference: paymentReference,
             metadata: {
+              payment_type: 'service_booking',
               booking_id: booking.id,
               user_id: user.id,
             },
             return_url: returnUrl,
             cancel_url: cancelUrl,
-            app_version: Constants.expoConfig?.android?.versionCode || Constants.expoConfig?.version,
           });
           if (omError) throw omError;
           omResult = data;

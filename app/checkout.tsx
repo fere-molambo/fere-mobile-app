@@ -291,17 +291,16 @@ export default function CheckoutScreen() {
 
       const { data: omResult, error: omError } = await invokeWithAuth('orange-money-payment', {
         action: 'initialize',
-        payment_type: 'order',
         amount: summary.advanceAmount,
         reference: paymentReference,
         metadata: {
+          payment_type: 'order',
           payment_group_id: paymentGroupId,
           user_id: user.id,
         },
         checkout_data: checkoutSnapshot,
         return_url: returnUrl,
         cancel_url: cancelUrl,
-        app_version: Constants.expoConfig?.android?.versionCode || Constants.expoConfig?.version,
       });
 
       if (omError) throw new Error(omError.message || 'Erreur de paiement');

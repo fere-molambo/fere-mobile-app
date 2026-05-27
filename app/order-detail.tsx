@@ -325,16 +325,15 @@ export default function OrderDetailScreen() {
 
       const { data: result, error: invokeError } = await invokeWithAuth('orange-money-payment', {
         action: 'initialize',
-        payment_type: 'order_balance',
         amount: order.balance_amount,
         reference: balanceRef,
         metadata: {
+          payment_type: 'order_balance',
           order_id: order.id,
           user_id: user.id,
         },
         return_url: returnUrl,
         cancel_url: cancelUrl,
-        app_version: Constants.expoConfig?.android?.versionCode || Constants.expoConfig?.version,
       });
 
       if (invokeError) throw new Error(invokeError.message || 'Erreur de paiement');
