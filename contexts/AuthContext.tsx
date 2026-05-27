@@ -144,9 +144,18 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
   };
 
   const setSessionFromTokens = async (accessToken: string, refreshToken: string) => {
-    await supabase.auth.setSession({
+    const { error } = await supabase.auth.setSession({
       access_token: accessToken,
       refresh_token: refreshToken,
+    });
+    if (error) {
+      console.error('[Auth] setSession failed:', error.message);
+      throw error;
+    }
+    const { data: verify } = await supabase.auth.getSession();
+    console.log('[Auth] setSession confirmed:', {
+      persisted: !!verify?.session,
+      userId: verify?.session?.user?.id,
     });
   };
 

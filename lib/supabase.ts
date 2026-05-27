@@ -23,7 +23,8 @@ const ExpoSecureStoreAdapter = {
     }
     try {
       return await SecureStore.getItemAsync(key);
-    } catch {
+    } catch (e) {
+      console.error('[SecureStore] getItem failed:', key, e);
       return null;
     }
   },
@@ -37,7 +38,9 @@ const ExpoSecureStoreAdapter = {
     }
     try {
       await SecureStore.setItemAsync(key, value);
-    } catch {}
+    } catch (e) {
+      console.error('[SecureStore] setItem failed:', key, e);
+    }
   },
   removeItem: async (key: string) => {
     if (Platform.OS === 'web') {
@@ -49,7 +52,9 @@ const ExpoSecureStoreAdapter = {
     }
     try {
       await SecureStore.deleteItemAsync(key);
-    } catch {}
+    } catch (e) {
+      console.error('[SecureStore] removeItem failed:', key, e);
+    }
   },
 };
 
@@ -62,44 +67,36 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
-/**
- * Ensures the current Supabase session has a valid, non-expired access token.
- * Returns the access token so callers can pass it explicitly if needed.
- */
-export async function ensureValidSession(): Promise<string> {
-  let { data: { session } } = await supabase.auth.getSession();
+export async function invokeWithAuth(fn: string, body: Record<string, unknown>) {
+  let { data: { session }, error: sessionErr } = await supabase.auth.getSession();
 
-  if (!session) {
-    throw new Error('Session expirée. Veuillez vous reconnecter.');
-  }
+  console.log('[invokeWithAuth]', {
+    fn,
+    hasSession: !!session,
+    userId: session?.user?.id ?? null,
+    expiresAt: session?.expires_at,
+    now: Math.floor(Date.now() / 1000),
+    sessionErr: sessionErr?.message,
+  });
 
-  const exp = session.expires_at;
   const now = Math.floor(Date.now() / 1000);
-
-  if (exp && exp - now < 60) {
-    const { data, error } = await supabase.auth.refreshSession();
-    if (error || !data.session) {
-      throw new Error('Session expirée. Veuillez vous reconnecter.');
+  if (!session || (session.expires_at && session.expires_at - now < 60)) {
+    console.log('[invokeWithAuth] refreshing session...');
+    const { data: refreshed, error: rErr } = await supabase.auth.refreshSession();
+    if (rErr) {
+      console.error('[invokeWithAuth] refreshSession failed:', rErr.message);
     }
-    session = data.session;
+    session = refreshed?.session ?? null;
   }
 
-  return session.access_token;
-}
+  if (!session?.access_token) {
+    throw new Error('Session expirée, reconnectez-vous');
+  }
 
-/**
- * Invokes a Supabase edge function with an explicit Authorization header
- * to guarantee the user's JWT is sent (not the anon key).
- */
-export async function invokeWithAuth(
-  functionName: string,
-  body: Record<string, unknown>
-) {
-  const accessToken = await ensureValidSession();
-  return supabase.functions.invoke(functionName, {
+  console.log('[invokeWithAuth] calling', fn, 'with token prefix:', session.access_token.slice(0, 20));
+
+  return supabase.functions.invoke(fn, {
     body,
-    headers: {
-      Authorization: `Bearer ${accessToken}`,
-    },
+    headers: { Authorization: `Bearer ${session.access_token}` },
   });
 }
