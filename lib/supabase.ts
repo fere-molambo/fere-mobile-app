@@ -67,36 +67,63 @@ export const supabase = createClient(supabaseUrl, supabaseAnonKey, {
   },
 });
 
-export async function invokeWithAuth(fn: string, body: Record<string, unknown>) {
-  let { data: { session }, error: sessionErr } = await supabase.auth.getSession();
+export { supabaseUrl as SUPABASE_URL, supabaseAnonKey as SUPABASE_ANON_KEY };
 
-  console.log('[invokeWithAuth]', {
-    fn,
-    hasSession: !!session,
-    userId: session?.user?.id ?? null,
-    expiresAt: session?.expires_at,
-    now: Math.floor(Date.now() / 1000),
-    sessionErr: sessionErr?.message,
-  });
+/**
+ * Calls a Supabase edge function using explicit fetch with a fresh session token.
+ * Bypasses supabase.functions.invoke() which can silently fall back to the anon key on mobile.
+ */
+export async function invokeWithAuth(
+  fn: string,
+  body: Record<string, unknown>
+): Promise<{ data: any; error: any }> {
+  let { data: { session } } = await supabase.auth.getSession();
 
   const now = Math.floor(Date.now() / 1000);
   if (!session || (session.expires_at && session.expires_at - now < 60)) {
-    console.log('[invokeWithAuth] refreshing session...');
-    const { data: refreshed, error: rErr } = await supabase.auth.refreshSession();
-    if (rErr) {
-      console.error('[invokeWithAuth] refreshSession failed:', rErr.message);
+    console.log('[invokeWithAuth] session missing or expiring, refreshing...');
+    const { data: refreshed, error: refreshError } = await supabase.auth.refreshSession();
+    if (refreshError) {
+      console.log('[invokeWithAuth] refresh error:', refreshError.message);
     }
     session = refreshed?.session ?? null;
   }
 
   if (!session?.access_token) {
-    throw new Error('Session expirée, reconnectez-vous');
+    throw new Error('Session expirée. Déconnecte-toi puis reconnecte-toi.');
   }
 
-  console.log('[invokeWithAuth] calling', fn, 'with token prefix:', session.access_token.slice(0, 20));
+  console.log('[invokeWithAuth]', fn, '| userId:', session.user?.id, '| token:', session.access_token.slice(0, 20));
 
-  return supabase.functions.invoke(fn, {
-    body,
-    headers: { Authorization: `Bearer ${session.access_token}` },
-  });
+  const response = await fetch(
+    `${supabaseUrl}/functions/v1/${fn}`,
+    {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'Authorization': `Bearer ${session.access_token}`,
+        'apikey': supabaseAnonKey,
+      },
+      body: JSON.stringify(body),
+    }
+  );
+
+  const responseText = await response.text();
+  let result: any;
+  try {
+    result = JSON.parse(responseText);
+  } catch {
+    result = { error: responseText };
+  }
+
+  console.log('[OM-PAYMENT] status:', response.status, '| body:', JSON.stringify(result).slice(0, 200));
+
+  if (!response.ok) {
+    return {
+      data: null,
+      error: new Error(result?.error || result?.message || `Paiement refusé (${response.status})`),
+    };
+  }
+
+  return { data: result, error: null };
 }

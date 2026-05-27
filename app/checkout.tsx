@@ -289,18 +289,6 @@ export default function CheckoutScreen() {
         },
       };
 
-      // Diagnostic: check session state right before payment call
-      const { data: __diagSession, error: __diagErr } = await supabase.auth.getSession();
-      console.log('[OM-DIAG] === Checkout payment tap ===');
-      console.log('[OM-DIAG] getSession:', {
-        hasSession: !!__diagSession?.session,
-        userId: __diagSession?.session?.user?.id ?? null,
-        tokenPrefix: __diagSession?.session?.access_token?.slice(0, 20) ?? null,
-        expiresAt: __diagSession?.session?.expires_at,
-        now: Math.floor(Date.now() / 1000),
-        error: __diagErr?.message,
-      });
-
       const { data: omResult, error: omError } = await invokeWithAuth('orange-money-payment', {
         action: 'initialize',
         payment_type: 'order',
