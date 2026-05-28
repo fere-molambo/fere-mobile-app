@@ -289,8 +289,9 @@ export default function CheckoutScreen() {
         },
       };
 
-      const { data: omResult, error: omError } = await invokeWithAuth('orange-money-payment', {
+      const omBody = {
         action: 'initialize',
+        payment_type: 'order',
         amount: summary.advanceAmount,
         reference: paymentReference,
         metadata: {
@@ -301,6 +302,19 @@ export default function CheckoutScreen() {
         checkout_data: checkoutSnapshot,
         return_url: returnUrl,
         cancel_url: cancelUrl,
+      };
+      console.log('[OM initialize debug]', {
+        bodyKeys: Object.keys(omBody),
+        payment_type: omBody.payment_type,
+        return_url: omBody.return_url,
+        cancel_url: omBody.cancel_url,
+      });
+      const { data: omResult, error: omError } = await invokeWithAuth('orange-money-payment', omBody);
+      console.log('[OM initialize response]', {
+        hasPaymentUrl: !!omResult?.payment_url,
+        hasOrderId: !!omResult?.order_id,
+        hasPayToken: !!omResult?.pay_token,
+        error: omError?.message,
       });
 
       if (omError) throw new Error(omError.message || 'Erreur de paiement');

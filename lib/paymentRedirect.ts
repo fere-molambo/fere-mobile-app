@@ -1,8 +1,11 @@
 import { Platform } from 'react-native';
 
-const APP_SCHEME = 'fere';
-const MOBILE_CALLBACK_BASE = `${APP_SCHEME}://payment/callback`;
-const MOBILE_CANCEL_BASE = `${APP_SCHEME}://payment/cancel`;
+const SUPABASE_URL = 'https://jajfuajmkjulujnwfqen.supabase.co';
+
+// HTTPS URLs used as interception points in the WebView.
+// Orange Money rejects custom schemes (fere://) -- must be HTTPS.
+export const OM_RETURN_URL = `${SUPABASE_URL}/functions/v1/orange-money-payment/return`;
+export const OM_CANCEL_URL = `${SUPABASE_URL}/functions/v1/orange-money-payment/cancel`;
 
 export function getPaymentCallbackUrl(reference?: string): string {
   const origin = Platform.OS === 'web' && typeof window !== 'undefined'
@@ -16,25 +19,29 @@ export function getPaymentCallbackUrl(reference?: string): string {
 }
 
 export function getMobileReturnUrl(reference: string): string {
-  return `${MOBILE_CALLBACK_BASE}?reference=${encodeURIComponent(reference)}`;
+  return `${OM_RETURN_URL}?reference=${encodeURIComponent(reference)}`;
 }
 
 export function getMobileCancelUrl(reference: string): string {
-  return `${MOBILE_CANCEL_BASE}?reference=${encodeURIComponent(reference)}`;
+  return `${OM_CANCEL_URL}?reference=${encodeURIComponent(reference)}`;
 }
 
 export function isPaymentReturnUrl(url: string): boolean {
-  return url.includes('payment-callback') ||
-    url.includes('payment/callback') ||
-    url.includes('fere.app/payment') ||
+  return (
+    url.startsWith(OM_RETURN_URL) ||
+    url.includes('payment-callback') ||
     url.includes('action=return') ||
-    (url.includes('reference=') && (url.includes('orange-money') || url.includes('functions/v1')));
+    (url.includes('reference=') && url.includes('orange-money-payment/return'))
+  );
 }
 
 export function isPaymentCancelUrl(url: string): boolean {
-  return url.includes('payment-cancel') ||
-    url.includes('payment/cancel') ||
-    url.includes('action=cancelled');
+  return (
+    url.startsWith(OM_CANCEL_URL) ||
+    url.includes('payment-cancel') ||
+    url.includes('action=cancelled') ||
+    url.includes('orange-money-payment/cancel')
+  );
 }
 
 export function redirectToPayment(paymentUrl: string) {

@@ -228,8 +228,9 @@ export default function BookingScreen() {
 
         let omResult: any;
         try {
-          const { data, error: omError } = await invokeWithAuth('orange-money-payment', {
+          const omBody = {
             action: 'initialize',
+            payment_type: 'service_booking',
             amount: priceBreakdown.travelFee,
             reference: paymentReference,
             metadata: {
@@ -239,6 +240,19 @@ export default function BookingScreen() {
             },
             return_url: returnUrl,
             cancel_url: cancelUrl,
+          };
+          console.log('[OM initialize debug]', {
+            bodyKeys: Object.keys(omBody),
+            payment_type: omBody.payment_type,
+            return_url: omBody.return_url,
+            cancel_url: omBody.cancel_url,
+          });
+          const { data, error: omError } = await invokeWithAuth('orange-money-payment', omBody);
+          console.log('[OM initialize response]', {
+            hasPaymentUrl: !!data?.payment_url,
+            hasOrderId: !!data?.order_id,
+            hasPayToken: !!data?.pay_token,
+            error: omError?.message,
           });
           if (omError) throw omError;
           omResult = data;

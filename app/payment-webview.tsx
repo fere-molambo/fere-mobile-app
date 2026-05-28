@@ -4,7 +4,7 @@ import { useLocalSearchParams, useRouter, Stack } from 'expo-router';
 import { X, TriangleAlert as AlertTriangle } from 'lucide-react-native';
 import { useCart } from '@/contexts/CartContext';
 import { invokeWithAuth } from '@/lib/supabase';
-import { isPaymentReturnUrl, isPaymentCancelUrl } from '@/lib/paymentRedirect';
+import { OM_RETURN_URL, OM_CANCEL_URL, isPaymentReturnUrl, isPaymentCancelUrl } from '@/lib/paymentRedirect';
 
 let WebView: any = null;
 if (Platform.OS !== 'web') {
@@ -30,15 +30,6 @@ export default function PaymentWebViewScreen() {
   const [verifying, setVerifying] = useState(false);
   const [verifyError, setVerifyError] = useState<string | null>(null);
   const verifyingRef = useRef(false);
-
-  const handleNavigationChange = async (navState: any) => {
-    const currentUrl = navState.url || '';
-    if (currentUrl.startsWith('fere://payment/callback') || isPaymentReturnUrl(currentUrl)) {
-      await verifyAndComplete();
-    } else if (currentUrl.startsWith('fere://payment/cancel') || isPaymentCancelUrl(currentUrl)) {
-      handleCancel();
-    }
-  };
 
   const verifyAndComplete = useCallback(async () => {
     if (verifyingRef.current) return;
@@ -109,9 +100,26 @@ export default function PaymentWebViewScreen() {
     }
   }, [reference, payToken, paymentMode, bookingId, orderId, amount]);
 
-  const handleCancel = async () => {
+  const handleCancel = useCallback(() => {
     router.back();
-  };
+  }, []);
+
+  // Returns false to block navigation (interception), true to allow
+  const handlePaymentNavigation = useCallback((navUrl: string): boolean => {
+    if (!navUrl) return true;
+
+    if (isPaymentReturnUrl(navUrl)) {
+      verifyAndComplete();
+      return false;
+    }
+
+    if (isPaymentCancelUrl(navUrl)) {
+      handleCancel();
+      return false;
+    }
+
+    return true;
+  }, [verifyAndComplete, handleCancel]);
 
   if (verifying) {
     return (
@@ -169,31 +177,17 @@ export default function PaymentWebViewScreen() {
 
       <WebView
         source={{ uri: url }}
-        onNavigationStateChange={handleNavigationChange}
-        onShouldStartLoadWithRequest={(request: any) => {
-          const navUrl = request.url || '';
-          if (navUrl.startsWith('fere://payment/callback')) {
-            verifyAndComplete();
-            return false;
-          }
-          if (navUrl.startsWith('fere://payment/cancel')) {
-            handleCancel();
-            return false;
-          }
-          if (isPaymentReturnUrl(navUrl)) {
-            verifyAndComplete();
-            return false;
-          }
-          if (isPaymentCancelUrl(navUrl)) {
-            handleCancel();
-            return false;
-          }
-          return true;
-        }}
-        onLoadEnd={() => setLoading(false)}
-        style={styles.webview}
         javaScriptEnabled
         domStorageEnabled
+        startInLoadingState
+        onLoadEnd={() => setLoading(false)}
+        style={styles.webview}
+        onShouldStartLoadWithRequest={(request: any) => {
+          return handlePaymentNavigation(request.url || '');
+        }}
+        onNavigationStateChange={(navState: any) => {
+          handlePaymentNavigation(navState.url || '');
+        }}
       />
 
       {loading && (

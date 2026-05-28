@@ -93,7 +93,13 @@ export async function invokeWithAuth(
     throw new Error('Session expirée. Déconnecte-toi puis reconnecte-toi.');
   }
 
-  console.log('[invokeWithAuth]', fn, '| userId:', session.user?.id, '| token:', session.access_token.slice(0, 20));
+  console.log('[invokeWithAuth]', fn, {
+    hasSession: true,
+    hasAccessToken: !!session.access_token,
+    tokenLength: session.access_token.length,
+    userId: session.user?.id,
+    tokenPreview: session.access_token.slice(0, 20),
+  });
 
   const response = await fetch(
     `${supabaseUrl}/functions/v1/${fn}`,

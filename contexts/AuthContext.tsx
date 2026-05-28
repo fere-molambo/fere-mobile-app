@@ -152,11 +152,17 @@ export function AuthProvider({ children }: { children: React.ReactNode }) {
       console.error('[Auth] setSession failed:', error.message);
       throw error;
     }
+    // Wait for SecureStore to flush on Android before verifying
+    await new Promise((resolve) => setTimeout(resolve, 300));
     const { data: verify } = await supabase.auth.getSession();
     console.log('[Auth] setSession confirmed:', {
       persisted: !!verify?.session,
       userId: verify?.session?.user?.id,
+      tokenLength: verify?.session?.access_token?.length,
     });
+    if (!verify?.session?.access_token) {
+      throw new Error('Session non persistee. Reconnectez-vous.');
+    }
   };
 
   const signOut = async () => {

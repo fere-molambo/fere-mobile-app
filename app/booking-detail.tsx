@@ -174,8 +174,9 @@ export default function BookingDetailScreen() {
       const returnUrl = isWeb ? getPaymentCallbackUrl(paymentReference) : getMobileReturnUrl(paymentReference);
       const cancelUrl = isWeb ? getPaymentCallbackUrl(paymentReference) : getMobileCancelUrl(paymentReference);
 
-      const { data: omResult, error: omError } = await invokeWithAuth('orange-money-payment', {
+      const omBody = {
         action: 'initialize',
+        payment_type: 'service_booking',
         amount: payAmount,
         reference: paymentReference,
         metadata: {
@@ -186,6 +187,19 @@ export default function BookingDetailScreen() {
         },
         return_url: returnUrl,
         cancel_url: cancelUrl,
+      };
+      console.log('[OM initialize debug]', {
+        bodyKeys: Object.keys(omBody),
+        payment_type: omBody.payment_type,
+        return_url: omBody.return_url,
+        cancel_url: omBody.cancel_url,
+      });
+      const { data: omResult, error: omError } = await invokeWithAuth('orange-money-payment', omBody);
+      console.log('[OM initialize response]', {
+        hasPaymentUrl: !!omResult?.payment_url,
+        hasOrderId: !!omResult?.order_id,
+        hasPayToken: !!omResult?.pay_token,
+        error: omError?.message,
       });
 
       if (omError) throw new Error(omError.message || 'Impossible de lancer le paiement');

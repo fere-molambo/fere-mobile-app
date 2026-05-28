@@ -1,4 +1,4 @@
-import { supabase } from '@/lib/supabase';
+import { SUPABASE_URL, SUPABASE_ANON_KEY } from '@/lib/supabase';
 
 interface PhoneAuthSession {
   access_token: string;
@@ -28,49 +28,67 @@ export interface PhoneAuthError {
 }
 
 async function request(body: Record<string, unknown>): Promise<PhoneAuthResponse> {
-  const { data, error } = await supabase.functions.invoke('phone-auth', { body }) as {
-    data: PhoneAuthResponse | null;
-    error: any;
-  };
+  let rawData: any = null;
 
-  console.log('phone-auth response:', JSON.stringify(data));
+  try {
+    // Use direct fetch with apikey only (no Authorization) -- phone-auth is a public endpoint
+    const resp = await fetch(`${SUPABASE_URL}/functions/v1/phone-auth`, {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json',
+        'apikey': SUPABASE_ANON_KEY,
+      },
+      body: JSON.stringify(body),
+    });
 
-  if (error) {
-    let errBody: any = null;
-    try {
-      if (error.context) {
-        errBody = await error.context.json();
-      }
-    } catch {
-      // body already consumed or not JSON
+    const text = await resp.text();
+    try { rawData = JSON.parse(text); } catch { rawData = { error: text }; }
+
+    console.log('[phone-auth]', body.action, 'status:', resp.status, '| data:', JSON.stringify(rawData));
+
+    if (!resp.ok) {
+      const err: PhoneAuthError = {
+        error: rawData?.error || `Erreur serveur (${resp.status})`,
+        blocked_until: rawData?.blocked_until,
+        remaining_seconds: rawData?.remaining_seconds,
+        message: rawData?.message,
+        reason: rawData?.reason,
+        support_phone: rawData?.support_phone,
+        support_email: rawData?.support_email,
+      };
+      throw err;
     }
+  } catch (e: any) {
+    if (e?.error !== undefined) throw e;
+    throw { error: e?.message || 'Erreur reseau' } as PhoneAuthError;
+  }
+
+  if (rawData?.error && !rawData?.success) {
     const err: PhoneAuthError = {
-      error: errBody?.error || error.message || 'Une erreur est survenue',
-      blocked_until: errBody?.blocked_until,
-      remaining_seconds: errBody?.remaining_seconds,
-      message: errBody?.message,
-      reason: errBody?.reason,
-      support_phone: errBody?.support_phone,
-      support_email: errBody?.support_email,
+      error: rawData.error,
+      blocked_until: rawData.blocked_until,
+      remaining_seconds: rawData.remaining_seconds,
+      message: rawData.message,
+      reason: rawData.reason,
+      support_phone: rawData.support_phone,
+      support_email: rawData.support_email,
     };
     throw err;
   }
 
-  if (!data?.success && data?.error) {
-    const d = data as any;
-    const err: PhoneAuthError = {
-      error: d.error || 'Une erreur est survenue',
-      blocked_until: d.blocked_until,
-      remaining_seconds: d.remaining_seconds,
-      message: d.message,
-      reason: d.reason,
-      support_phone: d.support_phone,
-      support_email: d.support_email,
+  // Normalize: edge function returns { access_token, refresh_token, user } at root for login
+  if (rawData?.access_token && rawData?.refresh_token) {
+    return {
+      success: true,
+      session: {
+        access_token: rawData.access_token,
+        refresh_token: rawData.refresh_token,
+        user: rawData.user,
+      },
     };
-    throw err;
   }
 
-  return data;
+  return rawData as PhoneAuthResponse;
 }
 
 export async function register(

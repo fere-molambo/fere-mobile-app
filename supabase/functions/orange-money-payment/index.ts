@@ -412,20 +412,36 @@ Deno.serve(async (req: Request) => {
     return new Response(null, { status: 200, headers: corsHeaders });
   }
 
+  // Debug auth header
+  const authHeader = req.headers.get("authorization") || "";
+  const isBearer = authHeader.startsWith("Bearer ");
+  const tokenPreview = isBearer ? authHeader.slice(7, 27) + "..." : "(none)";
+  console.log("[om-payment] auth header preview:", tokenPreview, "| isBearer:", isBearer);
+
   try {
     const body = await req.json();
     const { action } = body;
 
     if (action === "initialize") {
       const { amount, reference, metadata, return_url, cancel_url } = body;
+      // Accept payment_type from top-level OR metadata (mobile sends both)
+      const paymentType = (body as any).payment_type || metadata?.payment_type;
 
       if (!amount || !reference) {
         return jsonResponse({ error: "amount and reference are required" }, 400);
       }
 
+      // Verify authenticated user for initialize
+      if (!isBearer) {
+        console.error("[om-payment] initialize rejected: no Bearer token");
+        return jsonResponse({ error: "Invalid authentication: missing Bearer token" }, 401);
+      }
+
       let verifiedAmount = amount;
 
-      if (metadata?.payment_type === "order_balance" && metadata?.order_id) {
+      console.log("[om-payment] initialize | payment_type:", paymentType, "| amount:", amount, "| reference:", reference);
+
+      if ((paymentType === "order_balance" || metadata?.payment_type === "order_balance") && metadata?.order_id) {
         const supabase = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
         const { data: order, error: orderErr } = await supabase
           .from("orders")
@@ -461,9 +477,9 @@ Deno.serve(async (req: Request) => {
 
       const supabaseAdmin = createClient(SUPABASE_URL, SUPABASE_SERVICE_ROLE_KEY);
 
-      const paymentMode = metadata?.payment_type === "order" ? "checkout"
-        : metadata?.payment_type === "order_balance" ? "balance"
-        : metadata?.payment_type || "checkout";
+      const paymentMode = paymentType === "order" ? "checkout"
+        : paymentType === "order_balance" ? "balance"
+        : paymentType || "checkout";
 
       const checkoutDataField = body.checkout_data
         ? { ...body.checkout_data, pay_token: omResult.pay_token }

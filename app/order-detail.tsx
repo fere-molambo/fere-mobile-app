@@ -323,8 +323,9 @@ export default function OrderDetailScreen() {
       const returnUrl = isWeb ? getPaymentCallbackUrl(balanceRef) : getMobileReturnUrl(balanceRef);
       const cancelUrl = isWeb ? getPaymentCallbackUrl(balanceRef) : getMobileCancelUrl(balanceRef);
 
-      const { data: result, error: invokeError } = await invokeWithAuth('orange-money-payment', {
+      const omBody = {
         action: 'initialize',
+        payment_type: 'order_balance',
         amount: order.balance_amount,
         reference: balanceRef,
         metadata: {
@@ -334,6 +335,19 @@ export default function OrderDetailScreen() {
         },
         return_url: returnUrl,
         cancel_url: cancelUrl,
+      };
+      console.log('[OM initialize debug]', {
+        bodyKeys: Object.keys(omBody),
+        payment_type: omBody.payment_type,
+        return_url: omBody.return_url,
+        cancel_url: omBody.cancel_url,
+      });
+      const { data: result, error: invokeError } = await invokeWithAuth('orange-money-payment', omBody);
+      console.log('[OM initialize response]', {
+        hasPaymentUrl: !!result?.payment_url,
+        hasOrderId: !!result?.order_id,
+        hasPayToken: !!result?.pay_token,
+        error: invokeError?.message,
       });
 
       if (invokeError) throw new Error(invokeError.message || 'Erreur de paiement');
