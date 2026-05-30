@@ -323,7 +323,7 @@ export default function CheckoutScreen() {
         throw new Error(omResult.error || 'Erreur de paiement');
       }
 
-      const effectiveRef = omResult.order_id || omResult.reference || paymentReference;
+      const effectiveRef = omResult.reference || paymentReference;
 
       if (isWeb) {
         redirectToPayment(omResult.payment_url);
