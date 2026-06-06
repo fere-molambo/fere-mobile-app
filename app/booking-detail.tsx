@@ -179,6 +179,8 @@ export default function BookingDetailScreen() {
         payment_type: 'service_booking',
         amount: payAmount,
         reference: paymentReference,
+        email: user.email,
+        related_id: booking.id,
         metadata: {
           payment_type: 'service_booking',
           booking_id: booking.id,
@@ -208,7 +210,7 @@ export default function BookingDetailScreen() {
         throw new Error(omResult.error || 'Impossible de lancer le paiement');
       }
 
-      const effectiveRef = omResult.reference || paymentReference;
+      const effectiveRef = omResult.order_id || omResult.reference || paymentReference;
 
       if (isWeb) {
         redirectToPayment(omResult.payment_url);

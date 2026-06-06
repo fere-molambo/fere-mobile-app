@@ -328,6 +328,7 @@ export default function OrderDetailScreen() {
         payment_type: 'order_balance',
         amount: order.balance_amount,
         reference: balanceRef,
+        related_id: order.id,
         metadata: {
           payment_type: 'order_balance',
           order_id: order.id,
@@ -353,7 +354,7 @@ export default function OrderDetailScreen() {
       if (invokeError) throw new Error(invokeError.message || 'Erreur de paiement');
 
       if (result.payment_url) {
-        const effectiveRef = result.reference || balanceRef;
+        const effectiveRef = result.order_id || result.reference || balanceRef;
 
         if (isWeb) {
           redirectToPayment(result.payment_url);
