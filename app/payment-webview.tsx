@@ -47,22 +47,27 @@ export default function PaymentWebViewScreen() {
       if (invokeError) throw new Error(invokeError.message || 'Erreur de verification');
 
       if (result.success) {
-        if (result.payment_mode === 'checkout') {
+        // Utiliser le payment_mode serveur en priorité, sinon celui passé en params (client)
+        const effectiveMode = result.payment_mode || paymentMode;
+        const effectiveBookingId = result.booking_id || bookingId;
+        const effectiveOrderId = result.order_id || orderId;
+
+        if (effectiveMode === 'checkout') {
           clearCart();
         }
 
         if (
-          (result.payment_mode === 'service_booking_advance' || result.payment_mode === 'service_booking_balance') &&
-          result.booking_id
+          (effectiveMode === 'service_booking_advance' || effectiveMode === 'service_booking_balance') &&
+          effectiveBookingId
         ) {
           router.replace({
             pathname: '/booking-detail',
-            params: { id: result.booking_id },
+            params: { id: effectiveBookingId },
           });
-        } else if (result.payment_mode === 'balance' && result.order_id) {
+        } else if (effectiveMode === 'balance' && effectiveOrderId) {
           router.replace({
             pathname: '/order-detail',
-            params: { id: result.order_id },
+            params: { id: effectiveOrderId },
           });
         } else {
           router.replace({
