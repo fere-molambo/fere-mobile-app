@@ -188,7 +188,7 @@ export default function VendorOrdersScreen({ userId, userRole }: Props) {
   useEffect(() => {
     if (shopIds.length === 0) return;
     const channel = supabase
-      .channel('vendor-orders-bookings')
+      .channel(`vendor-orders-bookings-${Date.now()}-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', { event: '*', schema: 'public', table: 'orders' }, () => { loadOrders(shopIds).then(setOrders); })
       .on('postgres_changes', { event: '*', schema: 'public', table: 'service_bookings' }, () => { loadBookings(shopIds).then(setBookings); })
       .subscribe();

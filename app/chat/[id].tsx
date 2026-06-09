@@ -163,7 +163,7 @@ export default function ConversationDetailScreen() {
   useEffect(() => {
     if (!id) return;
     const channel = supabase
-      .channel(`chat-detail-${id}`)
+      .channel(`chat-detail-${id}-${Date.now()}-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',

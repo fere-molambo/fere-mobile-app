@@ -170,7 +170,7 @@ export default function VendorHomeScreen({ userId }: VendorHomeScreenProps) {
     if (shopIds.length === 0) return;
 
     const channel = supabase
-      .channel('vendor-returns')
+      .channel(`vendor-returns-${Date.now()}-${Math.random().toString(36).slice(2)}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'delivery_requests' },

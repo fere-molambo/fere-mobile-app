@@ -128,7 +128,7 @@ export default function DriverChatScreen({ userId }: DriverChatScreenProps) {
 
   useEffect(() => {
     const channel = supabase
-      .channel('driver-messages')
+      .channel(`driver-messages-${Date.now()}-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',

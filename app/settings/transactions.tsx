@@ -100,7 +100,7 @@ export default function RefundsScreen() {
   useEffect(() => {
     if (!user) return;
     const channel = supabase
-      .channel(`client-refunds-${user.id}`)
+      .channel(`client-refunds-${user.id}-${Date.now()}-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',

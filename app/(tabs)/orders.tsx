@@ -133,7 +133,7 @@ export default function OrdersScreen() {
   useEffect(() => {
     if (sectionTab !== 'services' || !user) return;
     const channel = supabase
-      .channel(`user-bookings-${user.id}`)
+      .channel(`user-bookings-${user.id}-${Date.now()}-${Math.random().toString(36).slice(2)}`)
       .on(
         'postgres_changes',
         { event: '*', schema: 'public', table: 'service_bookings', filter: `customer_id=eq.${user.id}` },
@@ -188,7 +188,7 @@ export default function OrdersScreen() {
   useEffect(() => {
     if (!user) return;
     const channel = supabase
-      .channel(`user-orders-${user.id}`)
+      .channel(`user-orders-${user.id}-${Date.now()}-${Math.random().toString(36).slice(2)}`)
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'orders', filter: `user_id=eq.${user.id}` },

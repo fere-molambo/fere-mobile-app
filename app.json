@@ -2,7 +2,7 @@
   "expo": {
     "name": "fere",
     "slug": "fere",
-    "version": "1.0.17",
+    "version": "1.0.19",
     "orientation": "portrait",
     "icon": "./assets/images/icon.png",
     "scheme": "fere",
@@ -32,9 +32,23 @@
       "intentFilters": [
         {
           "action": "VIEW",
-          "data": [{ "scheme": "fere", "host": "payment" }],
-          "category": ["BROWSABLE", "DEFAULT"]
+          "data": [
+            {
+              "scheme": "fere",
+              "host": "payment"
+            }
+          ],
+          "category": [
+            "BROWSABLE",
+            "DEFAULT"
+          ]
         }
+      ],
+      "permissions": [
+        "android.permission.CAMERA",
+        "android.permission.RECORD_AUDIO",
+        "android.permission.ACCESS_COARSE_LOCATION",
+        "android.permission.ACCESS_FINE_LOCATION"
       ]
     },
     "web": {
@@ -56,6 +70,12 @@
     ],
     "experiments": {
       "typedRoutes": true
+    },
+    "extra": {
+      "router": {},
+      "eas": {
+        "projectId": "e67b6b72-52a5-4345-a121-4a7f3cc0b271"
+      }
     }
   }
 }

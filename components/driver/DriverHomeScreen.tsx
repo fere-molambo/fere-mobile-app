@@ -44,7 +44,7 @@ export default function DriverHomeScreen({ userId }: DriverHomeScreenProps) {
 
   useEffect(() => {
     const channel = supabase
-      .channel('driver-deliveries')
+      .channel(`driver-deliveries-${Date.now()}-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',

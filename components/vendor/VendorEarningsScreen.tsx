@@ -74,7 +74,7 @@ export default function VendorEarningsScreen({ userId, userRole }: Props) {
 
   useEffect(() => {
     const channel = supabase
-      .channel(`vendor-payouts-${userId}`)
+      .channel(`vendor-payouts-${userId}-${Date.now()}-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', {
         event: '*', schema: 'public', table: 'pending_payouts',
         filter: `recipient_id=eq.${userId}`,

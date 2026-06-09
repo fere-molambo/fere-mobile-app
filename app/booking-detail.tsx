@@ -96,7 +96,7 @@ export default function BookingDetailScreen() {
   useEffect(() => {
     if (!id) return;
     const channel = supabase
-      .channel(`booking-${id}`)
+      .channel(`booking-${id}-${Date.now()}-${Math.random().toString(36).slice(2)}`)
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'service_bookings', filter: `id=eq.${id}` },

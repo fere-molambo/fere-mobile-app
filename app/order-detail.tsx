@@ -148,7 +148,7 @@ export default function OrderDetailScreen() {
     if (!id) return;
 
     const ordersChannel = supabase
-      .channel(`order-detail-orders-${id}`)
+      .channel(`order-detail-orders-${id}-${Date.now()}-${Math.random().toString(36).slice(2)}`)
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'orders', filter: `id=eq.${id}` },
@@ -157,7 +157,7 @@ export default function OrderDetailScreen() {
       .subscribe();
 
     const deliveryChannel = supabase
-      .channel(`order-detail-delivery-${id}`)
+      .channel(`order-detail-delivery-${id}-${Date.now()}-${Math.random().toString(36).slice(2)}`)
       .on(
         'postgres_changes',
         { event: 'UPDATE', schema: 'public', table: 'delivery_requests', filter: `order_id=eq.${id}` },

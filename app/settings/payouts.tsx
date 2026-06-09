@@ -94,7 +94,7 @@ export default function PayoutsScreen() {
   useEffect(() => {
     if (!user) return;
     const channel = supabase
-      .channel(`user-payouts-${user.id}`)
+      .channel(`user-payouts-${user.id}-${Date.now()}-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', {
         event: '*',
         schema: 'public',

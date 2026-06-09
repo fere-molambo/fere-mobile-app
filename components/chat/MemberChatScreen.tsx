@@ -50,7 +50,7 @@ export default function MemberChatScreen({ userId }: MemberChatScreenProps) {
 
   useEffect(() => {
     const channel = supabase
-      .channel('member-messages-list')
+      .channel(`member-messages-list-${Date.now()}-${Math.random().toString(36).slice(2)}`)
       .on('postgres_changes', {
         event: 'INSERT',
         schema: 'public',
