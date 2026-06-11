@@ -75,13 +75,12 @@ export default function IdentityTab({ profile, onUpdate }: IdentityTabProps) {
       const fileExt = uri.split('.').pop()?.toLowerCase();
       const fileName = `${profile.id}_${Date.now()}.${fileExt}`;
 
-      const response = await fetch(uri);
-      const blob = await response.blob();
+      const arrayBuffer = await fetch(uri).then((r) => r.arrayBuffer());
 
       const { data: uploadData, error: uploadError } = await supabase.storage
         .from('identity_documents')
-        .upload(fileName, blob, {
-          contentType: `image/${fileExt}`,
+        .upload(fileName, arrayBuffer, {
+          contentType: `image/${fileExt === 'jpg' ? 'jpeg' : fileExt}`,
           upsert: true,
         });
 

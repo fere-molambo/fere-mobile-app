@@ -216,12 +216,11 @@ export default function ProductFormModal({ visible, shopId, product, onClose, on
       const ext = uri.split('.').pop() || 'jpg';
       const fileName = `${shopId}/${Date.now()}.${ext}`;
 
-      const response = await fetch(uri);
-      const blob = await response.blob();
+      const arrayBuffer = await fetch(uri).then((r) => r.arrayBuffer());
 
       const { error: uploadError } = await supabase.storage
         .from('product-media')
-        .upload(fileName, blob, { contentType: `image/${ext}`, upsert: true });
+        .upload(fileName, arrayBuffer, { contentType: `image/${ext === 'jpg' ? 'jpeg' : ext}`, upsert: true });
 
       if (uploadError) throw uploadError;
 

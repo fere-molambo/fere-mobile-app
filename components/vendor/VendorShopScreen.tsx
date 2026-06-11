@@ -157,10 +157,9 @@ export default function VendorShopScreen({ userId, userRole }: Props) {
       const uri = result.assets[0].uri;
       const ext = uri.split('.').pop() || 'jpg';
       const fileName = `${shop.id}/logo_${Date.now()}.${ext}`;
-      const response = await fetch(uri);
-      const blob = await response.blob();
+      const arrayBuffer = await fetch(uri).then((r) => r.arrayBuffer());
 
-      await supabase.storage.from('shop-logos').upload(fileName, blob, { contentType: `image/${ext}`, upsert: true });
+      await supabase.storage.from('shop-logos').upload(fileName, arrayBuffer, { contentType: `image/${ext === 'jpg' ? 'jpeg' : ext}`, upsert: true });
       const { data: urlData } = supabase.storage.from('shop-logos').getPublicUrl(fileName);
 
       await supabase.from('shops').update({ logo_url: urlData.publicUrl, updated_at: new Date().toISOString() }).eq('id', shop.id);
@@ -191,10 +190,9 @@ export default function VendorShopScreen({ userId, userRole }: Props) {
       const uri = result.assets[0].uri;
       const ext = uri.split('.').pop() || 'jpg';
       const fileName = `${shop.id}/banner_${Date.now()}.${ext}`;
-      const response = await fetch(uri);
-      const blob = await response.blob();
+      const arrayBuffer = await fetch(uri).then((r) => r.arrayBuffer());
 
-      await supabase.storage.from('shop-logos').upload(fileName, blob, { contentType: `image/${ext}`, upsert: true });
+      await supabase.storage.from('shop-logos').upload(fileName, arrayBuffer, { contentType: `image/${ext === 'jpg' ? 'jpeg' : ext}`, upsert: true });
       const { data: urlData } = supabase.storage.from('shop-logos').getPublicUrl(fileName);
 
       await supabase.from('shops').update({ banner_url: urlData.publicUrl, updated_at: new Date().toISOString() }).eq('id', shop.id);

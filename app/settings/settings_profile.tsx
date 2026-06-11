@@ -9,8 +9,6 @@ import {
   Platform,
 } from 'react-native';
 import { useAuth } from '@/contexts/AuthContext';
-import { useRouter } from 'expo-router';
-import { LogOut, Menu, ShoppingCart } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
 import { supabase } from '@/lib/supabase';
 import ProfileHeader from '@/components/ProfileHeader';
@@ -19,27 +17,27 @@ import PersonalInfoTab from '@/components/tabs/PersonalInfoTab';
 import AddressesTab from '@/components/tabs/AddressesTab';
 import IdentityTab from '@/components/tabs/IdentityTab';
 import DriverInfoTab from '@/components/tabs/DriverInfoTab';
-import ConfirmDialog from '@/components/ConfirmDialog';
+import VendorInfoTab from '@/components/tabs/VendorInfoTab';
+import SettingsSubHeader from '@/components/SettingsSubHeader';
 
-export default function ProfileScreen() {
-  const { profile, userRole, signOut, refreshProfile } = useAuth();
-  const router = useRouter();
+export default function ProfileSettingsScreen() {
+  const { profile, userRole, refreshProfile } = useAuth();
   const [activeTab, setActiveTab] = useState<TabType>('info');
-  const [logoutDialogVisible, setLogoutDialogVisible] = useState(false);
   const [uploadingPhoto, setUploadingPhoto] = useState(false);
 
   const isDriver = userRole === 'livreur';
+  const isVendor = userRole === 'vendeur' || userRole === 'equipe';
 
   const handleEditPhoto = async () => {
     if (Platform.OS === 'web') {
-      alert('L\'upload de photo n\'est pas disponible sur le web preview');
+      alert("L'upload de photo n'est pas disponible sur le web preview");
       return;
     }
 
     try {
       const { status } = await ImagePicker.requestMediaLibraryPermissionsAsync();
       if (status !== 'granted') {
-        alert('Permission d\'accès à la galerie refusée');
+        alert("Permission d'accès à la galerie refusée");
         return;
       }
 
@@ -68,13 +66,12 @@ export default function ProfileScreen() {
       const fileExt = uri.split('.').pop()?.toLowerCase();
       const fileName = `${profile.id}_${Date.now()}.${fileExt}`;
 
-      const response = await fetch(uri);
-      const blob = await response.blob();
+      const arrayBuffer = await fetch(uri).then((r) => r.arrayBuffer());
 
       const { error: uploadError } = await supabase.storage
         .from('profile_pictures')
-        .upload(fileName, blob, {
-          contentType: `image/${fileExt}`,
+        .upload(fileName, arrayBuffer, {
+          contentType: `image/${fileExt === 'jpg' ? 'jpeg' : fileExt}`,
           upsert: true,
         });
 
@@ -97,16 +94,10 @@ export default function ProfileScreen() {
       await refreshProfile();
     } catch (error: any) {
       console.error('Error uploading photo:', error);
-      alert('Erreur lors de l\'upload de la photo');
+      alert("Erreur lors de l'upload de la photo");
     } finally {
       setUploadingPhoto(false);
     }
-  };
-
-  const handleSignOut = async () => {
-    await signOut();
-    router.replace('/auth/login');
-    setLogoutDialogVisible(false);
   };
 
   if (!profile) {
@@ -119,26 +110,9 @@ export default function ProfileScreen() {
 
   return (
     <View style={styles.container}>
-      <View style={styles.topBar}>
-        <View style={styles.logo}>
-          <Text style={styles.logoText}>Fere</Text>
-        </View>
-        <View style={styles.topActions}>
-          <TouchableOpacity style={styles.iconButton}>
-            <ShoppingCart size={24} color="#1f2937" strokeWidth={2} />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.iconButton}>
-            <Menu size={24} color="#1f2937" strokeWidth={2} />
-          </TouchableOpacity>
-        </View>
-      </View>
+      <SettingsSubHeader title="Profil" />
 
       <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
-        <View style={styles.headerSection}>
-          <Text style={styles.pageTitle}>Mon Profil</Text>
-          <Text style={styles.pageSubtitle}>Gérez vos informations personnelles</Text>
-        </View>
-
         {uploadingPhoto ? (
           <View style={styles.uploadingContainer}>
             <ActivityIndicator size="large" color="#003f2f" />
@@ -157,6 +131,7 @@ export default function ProfileScreen() {
           activeTab={activeTab}
           onTabChange={setActiveTab}
           isDriver={isDriver}
+          isVendor={isVendor}
         />
 
         <View style={styles.tabContent}>
@@ -169,30 +144,14 @@ export default function ProfileScreen() {
           {activeTab === 'identity' && (
             <IdentityTab profile={profile} onUpdate={refreshProfile} />
           )}
+          {activeTab === 'vendor' && isVendor && (
+            <VendorInfoTab profile={profile} onUpdate={refreshProfile} />
+          )}
           {activeTab === 'driver' && isDriver && (
             <DriverInfoTab profile={profile} onUpdate={refreshProfile} />
           )}
         </View>
-
-        <View style={styles.footer}>
-          <TouchableOpacity
-            style={styles.logoutButton}
-            onPress={() => setLogoutDialogVisible(true)}>
-            <LogOut size={20} color="#dc2626" strokeWidth={2} />
-            <Text style={styles.logoutButtonText}>Déconnexion</Text>
-          </TouchableOpacity>
-        </View>
       </ScrollView>
-
-      <ConfirmDialog
-        visible={logoutDialogVisible}
-        title="Déconnexion"
-        message="Êtes-vous sûr de vouloir vous déconnecter ?"
-        confirmText="Déconnexion"
-        cancelText="Annuler"
-        onConfirm={handleSignOut}
-        onCancel={() => setLogoutDialogVisible(false)}
-      />
     </View>
   );
 }
@@ -208,52 +167,8 @@ const styles = StyleSheet.create({
     alignItems: 'center',
     backgroundColor: '#f5f5f5',
   },
-  topBar: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
-    paddingHorizontal: 20,
-    paddingTop: 60,
-    paddingBottom: 16,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-  },
-  logo: {
-    flexDirection: 'row',
-    alignItems: 'center',
-  },
-  logoText: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#003f2f',
-  },
-  topActions: {
-    flexDirection: 'row',
-    gap: 12,
-  },
-  iconButton: {
-    padding: 8,
-  },
   content: {
     flex: 1,
-  },
-  headerSection: {
-    backgroundColor: '#fff',
-    paddingHorizontal: 20,
-    paddingVertical: 20,
-    borderBottomWidth: 1,
-    borderBottomColor: '#e5e7eb',
-  },
-  pageTitle: {
-    fontSize: 24,
-    fontWeight: '700',
-    color: '#1f2937',
-    marginBottom: 4,
-  },
-  pageSubtitle: {
-    fontSize: 14,
-    color: '#6b7280',
   },
   uploadingContainer: {
     backgroundColor: '#fff',
@@ -267,24 +182,5 @@ const styles = StyleSheet.create({
   },
   tabContent: {
     minHeight: 400,
-  },
-  footer: {
-    padding: 20,
-  },
-  logoutButton: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'center',
-    gap: 8,
-    backgroundColor: '#fff',
-    borderWidth: 2,
-    borderColor: '#dc2626',
-    borderRadius: 10,
-    paddingVertical: 16,
-  },
-  logoutButtonText: {
-    fontSize: 16,
-    fontWeight: '600',
-    color: '#dc2626',
   },
 });

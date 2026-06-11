@@ -43,7 +43,7 @@ export function useTrackingSession(referenceId: string): UseTrackingSessionResul
     loadSession();
 
     const channel = supabase
-      .channel(`tracking-${referenceId}`)
+      .channel(`tracking-${referenceId}-${Date.now()}-${Math.random().toString(36).slice(2)}`)
       .on(
         'postgres_changes',
         {
