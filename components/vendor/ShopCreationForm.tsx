@@ -13,7 +13,7 @@ interface Props {
 }
 
 const SHOP_TYPES = [
-  { value: 'produits', label: 'Produits uniquement' },
+  { value: 'fournisseur', label: 'Produits uniquement' },
   { value: 'prestataire', label: 'Services uniquement' },
   { value: 'les_deux', label: 'Produits et services' },
 ];

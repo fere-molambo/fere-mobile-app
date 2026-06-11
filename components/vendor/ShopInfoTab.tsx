@@ -51,8 +51,8 @@ interface Zone {
 }
 
 const SHOP_TYPE_OPTIONS = [
-  { label: 'Produits', value: 'produits' },
-  { label: 'Services', value: 'services' },
+  { label: 'Produits', value: 'fournisseur' },
+  { label: 'Services', value: 'prestataire' },
   { label: 'Les deux', value: 'les_deux' },
 ];
 
