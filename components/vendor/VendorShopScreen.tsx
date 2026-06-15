@@ -145,8 +145,7 @@ export default function VendorShopScreen({ userId, userRole }: Props) {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [1, 1],
+      allowsEditing: false,
       quality: 0.8,
     });
 
@@ -178,8 +177,7 @@ export default function VendorShopScreen({ userId, userRole }: Props) {
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      allowsEditing: true,
-      aspect: [16, 9],
+      allowsEditing: false,
       quality: 0.8,
     });
 
@@ -280,7 +278,7 @@ export default function VendorShopScreen({ userId, userRole }: Props) {
         <View style={styles.pendingBanner}>
           <Clock size={16} color="#0369a1" />
           <Text style={styles.pendingBannerText}>
-            Votre boutique est en attente de validation par l'equipe Fere. Vous serez notifie une fois qu'elle sera activee.
+            Votre boutique est en attente de validation par l'equipe FERE. Vous serez notifie une fois qu'elle sera activee.
           </Text>
         </View>
       )}

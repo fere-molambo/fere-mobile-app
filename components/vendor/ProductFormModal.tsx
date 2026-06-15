@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TextInput, TouchableOpacity,
-  Modal, ActivityIndicator, Switch, Image, Platform,
+  Modal, ActivityIndicator, Switch, Image, Platform, KeyboardAvoidingView,
 } from 'react-native';
 import { X, Camera, Trash2, Plus } from 'lucide-react-native';
 import * as ImagePicker from 'expo-image-picker';
@@ -59,13 +59,9 @@ const CONDITIONS = [
 ];
 
 const PRODUCT_TYPES = [
-  { value: 'vetements', label: 'Vetements' },
-  { value: 'chaussures', label: 'Chaussures' },
-  { value: 'electronique', label: 'Electronique' },
-  { value: 'accessoires', label: 'Accessoires' },
-  { value: 'beaute', label: 'Beaute' },
-  { value: 'maison', label: 'Maison' },
-  { value: 'alimentation', label: 'Alimentation' },
+  { value: 'fragile', label: 'Fragile' },
+  { value: 'lourd', label: 'Lourd' },
+  { value: 'inflammable', label: 'Inflammable' },
   { value: 'autre', label: 'Autre' },
 ];
 
@@ -202,7 +198,7 @@ export default function ProductFormModal({ visible, shopId, product, onClose, on
 
     const result = await ImagePicker.launchImageLibraryAsync({
       mediaTypes: ['images'],
-      allowsEditing: true,
+      allowsEditing: false,
       quality: 0.8,
     });
 
@@ -319,6 +315,11 @@ export default function ProductFormModal({ visible, shopId, product, onClose, on
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="pageSheet">
+      <KeyboardAvoidingView
+        style={{ flex: 1 }}
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        keyboardVerticalOffset={0}
+      >
       <View style={styles.container}>
         <View style={styles.header}>
           <Text style={styles.headerTitle}>{isEdit ? 'Modifier le produit' : 'Nouveau produit'}</Text>
@@ -480,6 +481,19 @@ export default function ProductFormModal({ visible, shopId, product, onClose, on
             <View style={styles.customColorRow}>
               <View style={[styles.colorPreviewBox, { backgroundColor: customColorHex }]} />
               <TextInput
+                style={[styles.input, styles.colorHexInput]}
+                value={customColorHex}
+                onChangeText={(v) => {
+                  let h = v.trim();
+                  if (h && !h.startsWith('#')) h = '#' + h;
+                  setCustomColorHex(h.slice(0, 7).toUpperCase());
+                }}
+                placeholder="#000000"
+                placeholderTextColor="#9ca3af"
+                autoCapitalize="characters"
+                maxLength={7}
+              />
+              <TextInput
                 style={[styles.input, styles.colorInput]}
                 value={customColorName}
                 onChangeText={setCustomColorName}
@@ -560,6 +574,7 @@ export default function ProductFormModal({ visible, shopId, product, onClose, on
           <View style={{ height: 40 }} />
         </ScrollView>
       </View>
+      </KeyboardAvoidingView>
     </Modal>
   );
 }
@@ -613,6 +628,7 @@ const styles = StyleSheet.create({
     width: 40, height: 40, borderRadius: 8, borderWidth: 1, borderColor: '#e5e7eb',
   },
   colorInput: { flex: 1 },
+  colorHexInput: { width: 90, fontSize: 13 },
   addColorBtn: {
     width: 40, height: 40, borderRadius: 8, borderWidth: 1, borderColor: '#e5e7eb',
     justifyContent: 'center', alignItems: 'center', backgroundColor: '#fff',

@@ -12,7 +12,7 @@ import { useAuthFlow } from '@/contexts/AuthFlowContext';
 export default function RegisterScreen() {
   const [activeTab, setActiveTab] = useState<'connexion' | 'inscription'>('inscription');
   const [nomComplet, setNomComplet] = useState('');
-  const [countryCode, setCountryCode] = useState('+225');
+  const [countryCode, setCountryCode] = useState('+223');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [email, setEmail] = useState('');
   const [selectedRole, setSelectedRole] = useState<AppRole>('membre');
@@ -85,7 +85,7 @@ export default function RegisterScreen() {
             resizeMode="contain"
           />
           <Text style={styles.title}>Creer un compte</Text>
-          <Text style={styles.subtitle}>Rejoignez la communaute Fere</Text>
+          <Text style={styles.subtitle}>Rejoignez la communaute FERE</Text>
         </View>
 
         <View style={styles.tabContainer}>

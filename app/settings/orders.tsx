@@ -85,7 +85,7 @@ export default function OrdersSettingsScreen() {
           </View>
           <Text style={styles.emptyTitle}>Aucune commande</Text>
           <Text style={styles.emptySubtitle}>
-            Retrouvez ici l'historique et le suivi de toutes vos commandes passées sur Fere.
+            Retrouvez ici l'historique et le suivi de toutes vos commandes passées sur FERE.
           </Text>
         </View>
       ) : (

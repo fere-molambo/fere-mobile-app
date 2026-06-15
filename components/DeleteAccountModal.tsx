@@ -168,7 +168,7 @@ export default function DeleteAccountModal({ visible, onClose }: DeleteAccountMo
 
       <Text style={styles.title}>Demande enregistree</Text>
       <Text style={styles.description}>
-        Votre demande a ete enregistree. L'equipe Fere vous contactera dans un delai de 30 jours.
+        Votre demande a ete enregistree. L'equipe FERE vous contactera dans un delai de 30 jours.
       </Text>
 
       <TouchableOpacity

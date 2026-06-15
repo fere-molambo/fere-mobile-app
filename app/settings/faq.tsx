@@ -18,7 +18,7 @@ interface FAQItem {
 const FAQ_DATA: FAQItem[] = [
   {
     id: '1',
-    question: 'Comment passer une commande sur Fere ?',
+    question: 'Comment passer une commande sur FERE ?',
     answer:
       "Parcourez les offres disponibles dans l'onglet \"Offres\", ajoutez les produits ou services souhaités à votre panier, puis validez votre commande en suivant les étapes de paiement.",
   },
@@ -44,7 +44,7 @@ const FAQ_DATA: FAQItem[] = [
     id: '5',
     question: 'Quels sont les modes de paiement acceptés ?',
     answer:
-      'Fere accepte les paiements par carte bancaire (Visa, Mastercard), ainsi que les paiements mobiles. D\'autres modes de paiement seront bientôt disponibles.',
+      'FERE accepte les paiements par carte bancaire (Visa, Mastercard), ainsi que les paiements mobiles. D\'autres modes de paiement seront bientôt disponibles.',
   },
   {
     id: '6',

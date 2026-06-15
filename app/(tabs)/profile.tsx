@@ -45,8 +45,7 @@ export default function ProfileScreen() {
 
       const result = await ImagePicker.launchImageLibraryAsync({
         mediaTypes: ImagePicker.MediaTypeOptions.Images,
-        allowsEditing: true,
-        aspect: [1, 1],
+        allowsEditing: false,
         quality: 0.8,
       });
 
@@ -120,7 +119,7 @@ export default function ProfileScreen() {
     <View style={styles.container}>
       <View style={styles.topBar}>
         <View style={styles.logo}>
-          <Text style={styles.logoText}>Fere</Text>
+          <Text style={styles.logoText}>FERE</Text>
         </View>
         <View style={styles.topActions}>
           <TouchableOpacity style={styles.iconButton}>

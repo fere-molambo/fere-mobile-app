@@ -10,7 +10,7 @@ import type { PhoneAuthError } from '@/lib/phoneAuth';
 
 export default function LoginScreen() {
   const [activeTab, setActiveTab] = useState<'connexion' | 'inscription'>('connexion');
-  const [countryCode, setCountryCode] = useState('+225');
+  const [countryCode, setCountryCode] = useState('+223');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [pin, setPin] = useState('');
   const [loading, setLoading] = useState(false);
@@ -118,7 +118,7 @@ export default function LoginScreen() {
             resizeMode="contain"
           />
           <Text style={styles.title}>Connexion</Text>
-          <Text style={styles.subtitle}>Accedez a votre espace Fere</Text>
+          <Text style={styles.subtitle}>Accedez a votre espace FERE</Text>
         </View>
 
         <View style={styles.tabContainer}>

@@ -36,12 +36,12 @@ const LEGAL_SECTIONS: LegalSection[] = [
   {
     title: "1. Éditeur de l'application",
     content:
-      "L'application Fere est éditée par la société Fere SAS. Email : contact@fere.com.",
+      "L'application FERE est éditée par la société FERE SAS. Email : contact@fere.com.",
   },
   {
     title: '2. Objet',
     content:
-      "L'application Fere est une plateforme de mise en relation entre acheteurs et vendeurs de produits et services. Elle permet aux utilisateurs de parcourir des offres, passer des commandes et communiquer avec des prestataires.",
+      "L'application FERE est une plateforme de mise en relation entre acheteurs et vendeurs de produits et services. Elle permet aux utilisateurs de parcourir des offres, passer des commandes et communiquer avec des prestataires.",
   },
   {
     title: '3. Collecte et traitement des données personnelles',
@@ -56,17 +56,17 @@ const LEGAL_SECTIONS: LegalSection[] = [
   {
     title: '5. Propriété intellectuelle',
     content:
-      "Tous les contenus présents sur l'application sont la propriété exclusive de Fere SAS et sont protégés par les lois relatives à la propriété intellectuelle. Toute reproduction est interdite sans autorisation.",
+      "Tous les contenus présents sur l'application sont la propriété exclusive de FERE SAS et sont protégés par les lois relatives à la propriété intellectuelle. Toute reproduction est interdite sans autorisation.",
   },
   {
     title: '6. Responsabilité',
     content:
-      "Fere SAS ne saurait être tenue responsable des dommages résultant de l'utilisation de l'application. Les vendeurs sont seuls responsables du contenu de leurs annonces.",
+      "FERE SAS ne saurait être tenue responsable des dommages résultant de l'utilisation de l'application. Les vendeurs sont seuls responsables du contenu de leurs annonces.",
   },
   {
     title: '7. Droit applicable',
     content:
-      "Les présentes mentions légales sont soumises au droit applicable. En cas de litige, les tribunaux compétents sont ceux du ressort du siège social de Fere SAS.",
+      "Les présentes mentions légales sont soumises au droit applicable. En cas de litige, les tribunaux compétents sont ceux du ressort du siège social de FERE SAS.",
   },
 ];
 

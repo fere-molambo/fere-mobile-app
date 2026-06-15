@@ -6,7 +6,7 @@ import * as phoneAuth from '@/lib/phoneAuth';
 import type { PhoneAuthError } from '@/lib/phoneAuth';
 
 export default function AdminResetScreen() {
-  const [countryCode, setCountryCode] = useState('+225');
+  const [countryCode, setCountryCode] = useState('+223');
   const [phoneNumber, setPhoneNumber] = useState('');
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

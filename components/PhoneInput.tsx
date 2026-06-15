@@ -5,11 +5,6 @@ import { ChevronDown, Phone } from 'lucide-react-native';
 const COUNTRY_CODES = [
   { code: '+223', country: 'Mali', flag: '\uD83C\uDDF2\uD83C\uDDF1' },
   { code: '+225', country: 'Cote d\'Ivoire', flag: '\uD83C\uDDE8\uD83C\uDDEE' },
-  { code: '+221', country: 'Senegal', flag: '\uD83C\uDDF8\uD83C\uDDF3' },
-  { code: '+226', country: 'Burkina Faso', flag: '\uD83C\uDDE7\uD83C\uDDEB' },
-  { code: '+228', country: 'Togo', flag: '\uD83C\uDDF9\uD83C\uDDEC' },
-  { code: '+229', country: 'Benin', flag: '\uD83C\uDDE7\uD83C\uDDEF' },
-  { code: '+227', country: 'Niger', flag: '\uD83C\uDDF3\uD83C\uDDEA' },
 ];
 
 interface PhoneInputProps {
