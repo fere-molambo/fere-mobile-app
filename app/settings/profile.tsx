@@ -63,12 +63,12 @@ export default function ProfileSettingsScreen() {
       setUploadingPhoto(true);
 
       const fileExt = uri.split('.').pop()?.toLowerCase();
-      const fileName = `${profile.id}_${Date.now()}.${fileExt}`;
+      const fileName = `${profile.id}/${profile.id}.${fileExt}`;
 
       const arrayBuffer = await fetch(uri).then((r) => r.arrayBuffer());
 
       const { error: uploadError } = await supabase.storage
-        .from('profile_pictures')
+        .from('avatars')
         .upload(fileName, arrayBuffer, {
           contentType: `image/${fileExt === 'jpg' ? 'jpeg' : fileExt}`,
           upsert: true,
@@ -77,7 +77,7 @@ export default function ProfileSettingsScreen() {
       if (uploadError) throw uploadError;
 
       const { data: urlData } = supabase.storage
-        .from('profile_pictures')
+        .from('avatars')
         .getPublicUrl(fileName);
 
       const { error: updateError } = await supabase
@@ -93,7 +93,7 @@ export default function ProfileSettingsScreen() {
       await refreshProfile();
     } catch (error: any) {
       console.error('Error uploading photo:', error);
-      alert("Erreur lors de l'upload de la photo");
+      alert("Erreur upload: " + (error?.message || "inconnu"));
     } finally {
       setUploadingPhoto(false);
     }

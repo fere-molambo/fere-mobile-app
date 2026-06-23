@@ -255,12 +255,8 @@ export default function OrdersScreen() {
     if (!user || contactingAdmin[orderId]) return;
     setContactingAdmin((prev) => ({ ...prev, [orderId]: true }));
     try {
-      const { data: admins } = await supabase
-        .from('user_roles')
-        .select('user_id')
-        .in('role', ['admin', 'super_admin'])
-        .limit(1);
-      const adminId = admins?.[0]?.user_id;
+      const { data: adminIdResult } = await supabase.rpc('get_support_admin_id');
+      const adminId = adminIdResult as string | null;
       if (!adminId) {
         Alert.alert('Admin indisponible', "Aucun administrateur n'est disponible pour le moment.");
         return;

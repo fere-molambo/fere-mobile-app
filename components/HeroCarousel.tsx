@@ -9,6 +9,7 @@ import {
   TouchableOpacity,
   Animated,
 } from 'react-native';
+import { useRouter } from 'expo-router';
 import { supabase } from '@/lib/supabase';
 import { HeroCard } from '@/types/database';
 
@@ -17,6 +18,7 @@ const CARD_WIDTH = SCREEN_WIDTH - 32;
 const AUTO_SCROLL_INTERVAL = 5000;
 
 export default function HeroCarousel() {
+  const router = useRouter();
   const [heroCards, setHeroCards] = useState<HeroCard[]>([]);
   const [activeIndex, setActiveIndex] = useState(0);
   const [loading, setLoading] = useState(true);
@@ -102,6 +104,10 @@ export default function HeroCarousel() {
             key={index}
             style={styles.card}
             activeOpacity={0.9}
+            onPress={() => {
+              const link = (card as any).button_link;
+              if (link) router.push(link as any);
+            }}
           >
             <Image
               source={{ uri: card.image_url }}

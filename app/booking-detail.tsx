@@ -284,7 +284,7 @@ export default function BookingDetailScreen() {
     <View style={styles.container}>
       <Stack.Screen options={{ headerShown: false }} />
       <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
+        <TouchableOpacity onPress={() => { if (router.canGoBack()) router.back(); else router.replace('/' as any); }} style={styles.backBtn}>
           <ArrowLeft color="#333" size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle}>Suivi de reservation</Text>

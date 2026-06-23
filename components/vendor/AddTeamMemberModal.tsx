@@ -58,7 +58,7 @@ export default function AddTeamMemberModal({ visible, onClose, shopId, vendorUse
           email: email.trim().toLowerCase(),
           password,
           nom_complet: name.trim(),
-          telephone: phone.trim() || null,
+          contact: phone.trim() || null,
           role: 'equipe',
           created_by: vendorUserId,
         }),

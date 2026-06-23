@@ -394,7 +394,7 @@ export default function OrderDetailScreen() {
     return (
       <View style={styles.loadingContainer}>
         <Text style={styles.errorText}>Commande introuvable.</Text>
-        <TouchableOpacity style={styles.backBtn} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.backBtn} onPress={() => { if (router.canGoBack()) router.back(); else router.replace('/' as any); }}>
           <Text style={styles.backBtnText}>Retour</Text>
         </TouchableOpacity>
       </View>
@@ -416,7 +416,7 @@ export default function OrderDetailScreen() {
   return (
     <View style={styles.container}>
       <View style={styles.header}>
-        <TouchableOpacity style={styles.headerBackBtn} onPress={() => router.back()}>
+        <TouchableOpacity style={styles.headerBackBtn} onPress={() => { if (router.canGoBack()) router.back(); else router.replace('/' as any); }}>
           <ChevronLeft color="#333" size={24} />
         </TouchableOpacity>
         <Text style={styles.headerTitle} numberOfLines={1}>

@@ -171,7 +171,7 @@ export default function ProductDetailScreen() {
           headerShown: true,
           headerTitle: '',
           headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
+            <TouchableOpacity onPress={() => { if (router.canGoBack()) router.back(); else router.replace('/' as any); }} style={styles.headerButton}>
               <ArrowLeft color="#333" size={24} />
             </TouchableOpacity>
           ),
@@ -448,11 +448,14 @@ export default function ProductDetailScreen() {
                 <View style={styles.shopStats}>
                   <View style={styles.shopStars}>
                     {[1, 2, 3, 4, 5].map((star) => (
-                      <Star key={star} color="#FFB800" size={14} fill="#FFB800" />
+                      <Star key={star} color="#FFB800" size={14}
+                        fill={star <= Math.round(shopStatsData?.avg || 0) ? "#FFB800" : "transparent"} />
                     ))}
                   </View>
                   <Text style={styles.shopStatsText}>
-                    4.8 • 156 produits • 1.2k vendus
+                    {shopStatsData
+                      ? `${shopStatsData.avg > 0 ? shopStatsData.avg.toFixed(1) + ' • ' : ''}${shopStatsData.count} produit${shopStatsData.count > 1 ? 's' : ''}${shopStatsData.total > 0 ? ' • ' + shopStatsData.total + ' vendu' + (shopStatsData.total > 1 ? 's' : '') : ''}`
+                      : '...'}
                   </Text>
                 </View>
               </View>

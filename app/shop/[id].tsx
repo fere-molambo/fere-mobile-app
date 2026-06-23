@@ -126,7 +126,7 @@ export default function ShopDetailScreen() {
           headerTitle: '',
           headerTransparent: true,
           headerLeft: () => (
-            <TouchableOpacity onPress={() => router.back()} style={styles.headerButton}>
+            <TouchableOpacity onPress={() => { if (router.canGoBack()) router.back(); else router.replace('/' as any); }} style={styles.headerButton}>
               <ArrowLeft color="#fff" size={24} />
             </TouchableOpacity>
           ),
