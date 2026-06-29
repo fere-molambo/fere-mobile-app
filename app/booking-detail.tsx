@@ -48,7 +48,7 @@ function getStepIndex(status: BookingStatus): number {
 export default function BookingDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
 
   const [booking, setBooking] = useState<ServiceBooking | null>(null);
   const [vendorProfile, setVendorProfile] = useState<any>(null);
@@ -106,10 +106,22 @@ export default function BookingDetailScreen() {
     return () => { supabase.removeChannel(channel); };
   }, [id, loadBooking]);
 
+  const isVendor = !!user && !!vendorProfile && (user.id === vendorProfile.id || userRole === 'vendeur' || userRole === 'equipe');
+
   const handleContact = async () => {
     if (!user || !vendorProfile) return;
     try {
       const convoId = await startConversation(user.id, vendorProfile.id);
+      router.push({ pathname: '/chat/[id]', params: { id: convoId } });
+    } catch {}
+  };
+
+  const handleContactClient = async () => {
+    if (!user) return;
+    const customerId = (booking as any)?.customer?.id || (booking as any)?.customer_id;
+    if (!customerId) return;
+    try {
+      const convoId = await startConversation(user.id, customerId);
       router.push({ pathname: '/chat/[id]', params: { id: convoId } });
     } catch {}
   };
@@ -420,10 +432,17 @@ export default function BookingDetailScreen() {
                 )}
               </View>
             </View>
-            <TouchableOpacity style={styles.contactBtn} onPress={handleContact}>
-              <MessageCircle color="#003f2f" size={18} />
-              <Text style={styles.contactBtnText}>Contacter le prestataire</Text>
-            </TouchableOpacity>
+            {isVendor ? (
+              <TouchableOpacity style={styles.contactBtn} onPress={handleContactClient}>
+                <MessageCircle color="#003f2f" size={18} />
+                <Text style={styles.contactBtnText}>Contacter le client</Text>
+              </TouchableOpacity>
+            ) : (
+              <TouchableOpacity style={styles.contactBtn} onPress={handleContact}>
+                <MessageCircle color="#003f2f" size={18} />
+                <Text style={styles.contactBtnText}>Contacter le prestataire</Text>
+              </TouchableOpacity>
+            )}
           </View>
         )}
 

@@ -38,7 +38,7 @@ import TrackingMap from '@/components/tracking/TrackingMap';
 export default function OrderDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const { user } = useAuth();
+  const { user, userRole } = useAuth();
 
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [delivery, setDelivery] = useState<DeliveryRequest | null>(null);
@@ -88,6 +88,26 @@ export default function OrderDetailScreen() {
       setContactingVendor(false);
     }
   }, [user, order, contactingVendor, router]);
+
+  const [contactingAdmin, setContactingAdmin] = useState(false);
+  const handleContactAdmin = useCallback(async () => {
+    if (!user || contactingAdmin) return;
+    setContactingAdmin(true);
+    try {
+      const { data: adminIdResult } = await supabase.rpc('get_support_admin_id');
+      const adminId = adminIdResult as string | null;
+      if (!adminId) {
+        Alert.alert('Admin indisponible', "Aucun administrateur n'est disponible pour le moment.");
+        return;
+      }
+      const convoId = await startConversation(user.id, adminId);
+      router.push(`/chat/${convoId}` as any);
+    } catch {
+      Alert.alert('Erreur', "Impossible d'ouvrir la conversation.");
+    } finally {
+      setContactingAdmin(false);
+    }
+  }, [user, contactingAdmin, router]);
 
   const loadOrder = useCallback(async () => {
     if (!id) return;
@@ -569,21 +589,33 @@ export default function OrderDetailScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Contact</Text>
             <View style={styles.contactBtnsRow}>
-              <TouchableOpacity
-                style={styles.contactBtn}
-                onPress={handleContactVendor}
-                disabled={contactingVendor}
-              >
-                {contactingVendor ? (
-                  <ActivityIndicator size="small" color="#003f2f" />
-                ) : (
-                  <>
+              {isDriver && (
+                <>
+                  <TouchableOpacity
+                    style={styles.contactBtn}
+                    onPress={handleContactClient}
+                    disabled={contactingVendor}
+                  >
+                    {contactingVendor ? (
+                      <ActivityIndicator size="small" color="#003f2f" />
+                    ) : (
+                      <>
+                        <MessageCircle color="#003f2f" size={16} />
+                        <Text style={styles.contactBtnText}>Contacter le client</Text>
+                      </>
+                    )}
+                  </TouchableOpacity>
+                  <TouchableOpacity
+                    style={styles.contactBtn}
+                    onPress={handleContactVendor}
+                    disabled={contactingVendor}
+                  >
                     <MessageCircle color="#003f2f" size={16} />
                     <Text style={styles.contactBtnText}>Contacter le vendeur</Text>
-                  </>
-                )}
-              </TouchableOpacity>
-              {delivery && delivery.driver_id && !['delivered', 'cancelled'].includes(delivery.status) && (
+                  </TouchableOpacity>
+                </>
+              )}
+              {!isDriver && delivery && delivery.driver_id && !['delivered', 'cancelled'].includes(delivery.status) && (
                 <TouchableOpacity
                   style={styles.contactBtn}
                   onPress={handleContactDriver}
@@ -599,6 +631,20 @@ export default function OrderDetailScreen() {
                   )}
                 </TouchableOpacity>
               )}
+              <TouchableOpacity
+                style={styles.contactBtn}
+                onPress={handleContactAdmin}
+                disabled={contactingAdmin}
+              >
+                {contactingAdmin ? (
+                  <ActivityIndicator size="small" color="#003f2f" />
+                ) : (
+                  <>
+                    <MessageCircle color="#003f2f" size={16} />
+                    <Text style={styles.contactBtnText}>Contacter l'admin</Text>
+                  </>
+                )}
+              </TouchableOpacity>
             </View>
           </View>
         )}
