@@ -8,7 +8,7 @@ import {
   TouchableOpacity,
   ActivityIndicator,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Filter } from 'lucide-react-native';
 import AppHeader from '@/components/AppHeader';
 import OffersSearchBar from '@/components/OffersSearchBar';
@@ -24,7 +24,10 @@ type Tab = 'products' | 'services';
 
 export default function OffersScreen() {
   const router = useRouter();
-  const [activeTab, setActiveTab] = useState<Tab>('products');
+  const params = useLocalSearchParams<{ tab?: string }>();
+  const [activeTab, setActiveTab] = useState<Tab>(
+    params?.tab === 'services' ? 'services' : 'products'
+  );
   const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState<Filters>({
     categoryIds: [],

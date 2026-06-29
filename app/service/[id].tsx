@@ -55,6 +55,8 @@ export default function ServiceDetailScreen() {
   const [proposedPrice, setProposedPrice] = useState<string>('');
   const [proposedPriceError, setProposedPriceError] = useState<string | null>(null);
 
+  const [shopStatsData, setShopStatsData] = useState<{ avg: number; count: number } | null>(null);
+
   useEffect(() => {
     if (id) {
       fetchAverageRating('service', id as string)
@@ -62,6 +64,26 @@ export default function ServiceDetailScreen() {
         .catch(() => {});
     }
   }, [id]);
+
+  useEffect(() => {
+    const shopId = (service as any)?.shop?.id;
+    if (!shopId) return;
+    let cancel = false;
+    (async () => {
+      try {
+        const [reviewsRes, servicesRes] = await Promise.all([
+          supabase.from('shop_reviews').select('rating').eq('shop_id', shopId),
+          supabase.from('services').select('id', { count: 'exact', head: true }).eq('shop_id', shopId).eq('is_active', true),
+        ]);
+        if (cancel) return;
+        const ratings = (reviewsRes.data || []).map((r: any) => r.rating);
+        const avg = ratings.length ? ratings.reduce((s: number, n: number) => s + n, 0) / ratings.length : 0;
+        const count = servicesRes.count || 0;
+        setShopStatsData({ avg, count });
+      } catch {}
+    })();
+    return () => { cancel = true; };
+  }, [(service as any)?.shop?.id]);
 
   useEffect(() => {
     if (service?.price_type === 'negoce') {

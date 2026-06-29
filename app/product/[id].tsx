@@ -59,6 +59,8 @@ export default function ProductDetailScreen() {
   const [validationError, setValidationError] = useState<string | null>(null);
   const [liveRating, setLiveRating] = useState<{ average: number; count: number } | null>(null);
 
+  const [shopStatsData, setShopStatsData] = useState<{ avg: number; count: number; total: number } | null>(null);
+
   useEffect(() => {
     if (id) {
       fetchAverageRating('product', id as string)
@@ -66,6 +68,27 @@ export default function ProductDetailScreen() {
         .catch(() => {});
     }
   }, [id]);
+
+  useEffect(() => {
+    const shopId = (product as any)?.shop?.id;
+    if (!shopId) return;
+    let cancel = false;
+    (async () => {
+      try {
+        const [reviewsRes, productsRes] = await Promise.all([
+          supabase.from('shop_reviews').select('rating').eq('shop_id', shopId),
+          supabase.from('products').select('sales_count', { count: 'exact' }).eq('shop_id', shopId).eq('is_active', true),
+        ]);
+        if (cancel) return;
+        const ratings = (reviewsRes.data || []).map((r: any) => r.rating);
+        const avg = ratings.length ? ratings.reduce((s: number, n: number) => s + n, 0) / ratings.length : 0;
+        const count = productsRes.count || 0;
+        const total = (productsRes.data || []).reduce((s: number, p: any) => s + (p.sales_count || 0), 0);
+        setShopStatsData({ avg, count, total });
+      } catch {}
+    })();
+    return () => { cancel = true; };
+  }, [(product as any)?.shop?.id]);
 
   if (loading || !product) {
     return (

@@ -63,6 +63,7 @@ export default function ConversationDetailScreen() {
   const { user } = useAuth();
   const { setCurrentOpenConversationId, refreshUnreadCount } = useChat();
   const router = useRouter();
+  const insets = useSafeAreaInsets();
   const flatListRef = useRef<FlatList>(null);
 
   const [messages, setMessages] = useState<ChatMessage[]>([]);

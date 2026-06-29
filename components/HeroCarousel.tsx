@@ -105,8 +105,19 @@ export default function HeroCarousel() {
             style={styles.card}
             activeOpacity={0.9}
             onPress={() => {
+              const text = (card.button_text || '').toLowerCase();
               const link = (card as any).button_link;
-              if (link) router.push(link as any);
+              if (text.includes('inscri') || text.includes("s'inscri")) {
+                router.push('/auth/register' as any);
+              } else if (text.includes('service')) {
+                router.push({ pathname: '/(tabs)/offers', params: { tab: 'services' } } as any);
+              } else if (text.includes('produit')) {
+                router.push('/(tabs)/offers' as any);
+              } else if (link && typeof link === 'string' && link.startsWith('/')) {
+                router.push(link as any);
+              } else {
+                router.push('/(tabs)/offers' as any);
+              }
             }}
           >
             <Image
