@@ -418,8 +418,8 @@ function OrderCard({ order, onPress }: { order: VendorOrder; onPress: () => void
     confirmed: { label: 'Confirmee', color: '#3b82f6', bg: '#dbeafe' },
     preparing: { label: 'En preparation', color: '#ca8a04', bg: '#fef9c3' },
     shipped: { label: 'En livraison', color: '#0891b2', bg: '#cffafe' },
-    delivered: { label: 'Livree', color: '#16a34a', bg: '#dcfce7' },
-    cancelled: { label: 'Annulee', color: '#ef4444', bg: '#fee2e2' },
+    delivered: { label: 'Livrée', color: '#16a34a', bg: '#dcfce7' },
+    cancelled: { label: 'Annulée', color: '#ef4444', bg: '#fee2e2' },
   };
   const st = STATUS_MAP[order.status] || STATUS_MAP.pending;
 

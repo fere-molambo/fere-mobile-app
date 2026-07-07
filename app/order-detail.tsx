@@ -53,6 +53,23 @@ export default function OrderDetailScreen() {
   const [attachmentUri, setAttachmentUri] = useState<string | null>(null);
   const [contactingDriver, setContactingDriver] = useState(false);
   const [contactingVendor, setContactingVendor] = useState(false);
+  const [contactingClient, setContactingClient] = useState(false);
+
+  const isDriver = userRole === 'livreur';
+  const isVendor = !isDriver && (userRole === 'vendeur' || userRole === 'equipe' || (!!user && user.id === (order?.shop as any)?.owner_id));
+
+  const handleContactClient = useCallback(async () => {
+    if (!user || !(order as any)?.user_id || contactingClient) return;
+    setContactingClient(true);
+    try {
+      const convoId = await startConversation(user.id, (order as any).user_id);
+      router.push(`/chat/${convoId}` as any);
+    } catch (err) {
+      console.error('Error contacting client:', err);
+    } finally {
+      setContactingClient(false);
+    }
+  }, [user, order, contactingClient, router]);
 
   const handleContactDriver = useCallback(async () => {
     if (!user || !delivery?.driver_id || contactingDriver) return;
@@ -61,7 +78,7 @@ export default function OrderDetailScreen() {
       const convoId = await startConversation(user.id, delivery.driver_id);
       router.push(`/chat/${convoId}` as any);
     } catch (err) {
-      Alert.alert('Erreur', "Impossible d'ouvrir la conversation. Veuillez reessayer.");
+      Alert.alert('Erreur', "Impossible d'ouvrir la conversation. Veuillez réessayer.");
     } finally {
       setContactingDriver(false);
     }
@@ -83,7 +100,7 @@ export default function OrderDetailScreen() {
       const convoId = await startConversation(user.id, shop.owner_id);
       router.push(`/chat/${convoId}` as any);
     } catch (err) {
-      Alert.alert('Erreur', "Impossible d'ouvrir la conversation. Veuillez reessayer.");
+      Alert.alert('Erreur', "Impossible d'ouvrir la conversation. Veuillez réessayer.");
     } finally {
       setContactingVendor(false);
     }
@@ -117,8 +134,8 @@ export default function OrderDetailScreen() {
         .select(`
           id, order_number, status, payment_status, delivery_type,
           total_amount, advance_amount, advance_paid, balance_amount,
-          delivery_fee, subtotal, created_at, shop_id, delivery_address_id,
-          shop:shops(id, name, logo_url, contact_phone, address, geolocation_lat, geolocation_lng),
+          delivery_fee, subtotal, created_at, shop_id, delivery_address_id, user_id,
+          shop:shops(id, name, logo_url, contact_phone, address, geolocation_lat, geolocation_lng, owner_id),
           order_items(
             id, quantity, unit_price, total_price,
             product:products(id, name, main_media_url)
@@ -145,7 +162,7 @@ export default function OrderDetailScreen() {
 
       setDelivery(deliveryData as any);
     } catch (err) {
-      console.error('Error loading order detail:', err);
+      console.error('Error loading order détail:', err);
     } finally {
       setLoading(false);
     }
@@ -212,6 +229,7 @@ export default function OrderDetailScreen() {
 
     const deliveryStatus = delivery?.status ?? null;
     const isBeforePickup = canCancelBeforePickup(order.status, deliveryStatus);
+    const cancellerRole = isDriver ? 'driver' : isVendor ? 'vendor' : 'client';
     const isDriverArrived = deliveryStatus === 'arrived';
 
     try {
@@ -227,7 +245,7 @@ export default function OrderDetailScreen() {
           .insert({
             order_id: order.id,
             cancelled_by: user.id,
-            canceller_role: 'client',
+            canceller_role: cancellerRole,
             reason_id: selectedReasonId,
             status_at_cancellation: order.status,
             refund_amount: 0,
@@ -283,7 +301,7 @@ export default function OrderDetailScreen() {
           .insert({
             order_id: order.id,
             cancelled_by: user.id,
-            canceller_role: 'client',
+            canceller_role: cancellerRole,
             reason_id: selectedReasonId,
             status_at_cancellation: order.status,
             refund_amount: order.advance_amount || 0,
@@ -314,7 +332,7 @@ export default function OrderDetailScreen() {
         if (order.advance_amount && order.advance_amount > 0) {
           await supabase.from('refunds').insert({
             order_id: order.id,
-            user_id: user.id,
+            user_id: (order as any).user_id || user.id,
             cancellation_id: cancellationData.id,
             amount: order.advance_amount,
             status: 'pending',
@@ -509,7 +527,7 @@ export default function OrderDetailScreen() {
           <View style={styles.cancelledBanner}>
             <XCircle color="#ef4444" size={20} />
             <View style={{ flex: 1 }}>
-              <Text style={styles.cancelledBannerTitle}>Commande annulee</Text>
+              <Text style={styles.cancelledBannerTitle}>Commande annulée</Text>
               <Text style={styles.cancelledBannerText}>
                 Cette commande a ete annulee. Aucune livraison n'est en cours.
               </Text>
@@ -589,31 +607,31 @@ export default function OrderDetailScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Contact</Text>
             <View style={styles.contactBtnsRow}>
+              {(isDriver || isVendor) && (
+                <TouchableOpacity
+                  style={styles.contactBtn}
+                  onPress={handleContactClient}
+                  disabled={contactingClient}
+                >
+                  {contactingClient ? (
+                    <ActivityIndicator size="small" color="#003f2f" />
+                  ) : (
+                    <>
+                      <MessageCircle color="#003f2f" size={16} />
+                      <Text style={styles.contactBtnText}>Contacter le client</Text>
+                    </>
+                  )}
+                </TouchableOpacity>
+              )}
               {isDriver && (
-                <>
-                  <TouchableOpacity
-                    style={styles.contactBtn}
-                    onPress={handleContactClient}
-                    disabled={contactingVendor}
-                  >
-                    {contactingVendor ? (
-                      <ActivityIndicator size="small" color="#003f2f" />
-                    ) : (
-                      <>
-                        <MessageCircle color="#003f2f" size={16} />
-                        <Text style={styles.contactBtnText}>Contacter le client</Text>
-                      </>
-                    )}
-                  </TouchableOpacity>
-                  <TouchableOpacity
-                    style={styles.contactBtn}
-                    onPress={handleContactVendor}
-                    disabled={contactingVendor}
-                  >
-                    <MessageCircle color="#003f2f" size={16} />
-                    <Text style={styles.contactBtnText}>Contacter le vendeur</Text>
-                  </TouchableOpacity>
-                </>
+                <TouchableOpacity
+                  style={styles.contactBtn}
+                  onPress={handleContactVendor}
+                  disabled={contactingVendor}
+                >
+                  <MessageCircle color="#003f2f" size={16} />
+                  <Text style={styles.contactBtnText}>Contacter le vendeur</Text>
+                </TouchableOpacity>
               )}
               {!isDriver && delivery && delivery.driver_id && !['delivered', 'cancelled'].includes(delivery.status) && (
                 <TouchableOpacity

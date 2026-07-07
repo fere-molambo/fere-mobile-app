@@ -149,13 +149,13 @@ function ReviewCard({ review, userId }: { review: Review; userId: string }) {
           ) : replies.length > 0 ? (
             replies.map((r) => <ReplyItem key={r.id} reply={r} />)
           ) : (
-            <Text style={styles.noRepliesText}>Aucune reponse</Text>
+            <Text style={styles.noRepliesText}>Aucune réponse</Text>
           )}
 
           <View style={styles.replyInputRow}>
             <TextInput
               style={styles.replyInput}
-              placeholder="Votre reponse..."
+              placeholder="Votre réponse..."
               placeholderTextColor="#aaa"
               value={replyText}
               onChangeText={setReplyText}

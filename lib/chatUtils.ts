@@ -252,7 +252,7 @@ export async function getConversations(userId: string): Promise<ConversationWith
 
 export async function startConversation(userId: string, otherUserId: string): Promise<string> {
   if (!userId || !otherUserId) {
-    throw new Error('Utilisateur non identifie');
+    throw new Error('Utilisateur non identifié');
   }
 
   const { data: myConvos } = await supabase

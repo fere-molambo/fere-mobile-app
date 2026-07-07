@@ -138,7 +138,7 @@ export default function PartialPaymentModal({ visible, onClose, onConfirm }: Pro
                 <Text style={[styles.label, { marginTop: 16 }]}>Commentaire</Text>
                 <TextInput
                   style={styles.commentInput}
-                  placeholder="Decrivez le probleme..."
+                  placeholder="Décrivez le probleme..."
                   placeholderTextColor="#aaa"
                   multiline
                   numberOfLines={3}

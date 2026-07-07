@@ -178,7 +178,7 @@ export default function BookingScreen() {
   const handleSubmit = async () => {
     if (!service || !selectedDate || !selectedTime || !user || !priceBreakdown) return;
     if (!selectedAddressId) {
-      setError('Veuillez selectionner une adresse');
+      setError('Veuillez sélectionner une adresse');
       return;
     }
 
@@ -214,8 +214,8 @@ export default function BookingScreen() {
       if (service.shop?.owner_id) {
         sendNotificationToUser(
           service.shop.owner_id,
-          'Nouvelle reservation',
-          `Une nouvelle reservation pour "${service.name}" a ete effectuee.`,
+          'Nouvelle réservation',
+          `Une nouvelle réservation pour "${service.name}" a été effectuee.`,
           { booking_id: booking.id }
         ).catch(() => {});
       }
@@ -264,7 +264,7 @@ export default function BookingScreen() {
             .from('service_bookings')
             .update({ status: 'cancelled', payment_status: 'cancelled' })
             .eq('id', booking.id);
-          throw new Error('Erreur reseau lors de l\'initialisation du paiement. Aucune reservation n\'a ete conservee.');
+          throw new Error('Erreur reseau lors de l\'initialisation du paiement. Aucune réservation n\'a été conservee.');
         }
 
         if (!omResult.payment_url) {
@@ -300,7 +300,7 @@ export default function BookingScreen() {
         });
       }
     } catch (err: any) {
-      setError(err.message || 'Erreur lors de la creation de la reservation');
+      setError(err.message || 'Erreur lors de la création de la réservation');
     } finally {
       setSubmitting(false);
     }
@@ -349,7 +349,7 @@ export default function BookingScreen() {
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
           <ArrowLeft color="#333" size={24} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Reservation</Text>
+        <Text style={styles.headerTitle}>Réservation</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -604,7 +604,7 @@ export default function BookingScreen() {
             <Text style={styles.submitBtnText}>
               {priceBreakdown && priceBreakdown.travelFee > 0
                 ? `Payer l'acompte (${formatPrice(priceBreakdown.travelFee)} FCFA)`
-                : 'Confirmer la reservation'}
+                : 'Confirmer la réservation'}
             </Text>
           )}
         </TouchableOpacity>

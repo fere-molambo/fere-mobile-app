@@ -143,7 +143,7 @@ export default function DeleteAccountModal({ visible, onClose }: DeleteAccountMo
         </View>
       </View>
 
-      <Text style={styles.title}>Demande deja en cours</Text>
+      <Text style={styles.title}>Demande déjà en cours</Text>
       <Text style={styles.description}>
         Vous avez deja une demande en cours de traitement. Notre equipe vous contactera dans les
         meilleurs delais.
@@ -166,7 +166,7 @@ export default function DeleteAccountModal({ visible, onClose }: DeleteAccountMo
         </View>
       </View>
 
-      <Text style={styles.title}>Demande enregistree</Text>
+      <Text style={styles.title}>Demande enregistrée</Text>
       <Text style={styles.description}>
         Votre demande a ete enregistree. L'equipe FERE vous contactera dans un delai de 30 jours.
       </Text>

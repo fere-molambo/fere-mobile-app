@@ -12,7 +12,7 @@ import DeliveryStatusBadge from './DeliveryStatusBadge';
 
 const DELIVERY_NOTIFICATION_LABELS: Partial<Record<DeliveryStatus, string>> = {
   in_progress: 'Le livreur se dirige vers le point de collecte',
-  picked_up: 'Votre colis a ete recupere',
+  picked_up: 'Votre colis a été recupere',
   en_route_client: 'Le livreur est en route vers vous',
   arrived: 'Le livreur est arrive a votre adresse',
 };

@@ -1,7 +1,7 @@
 import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, Image,
-  Switch, ActivityIndicator,
+  Switch, ActivityIndicator, Alert,
 } from 'react-native';
 import { Package, Calendar, Plus, Pencil, Trash2, ChevronLeft, ChevronRight } from 'lucide-react-native';
 import { supabase } from '@/lib/supabase';
@@ -50,7 +50,7 @@ function formatPrice(n: number) {
 const CONDITION_LABELS: Record<string, string> = {
   neuf: 'Neuf',
   occasion: 'Occasion',
-  reconditionne: 'Reconditionne',
+  reconditionne: 'Reconditionné',
 };
 
 export default function ShopProductsTab({
@@ -73,11 +73,72 @@ export default function ShopProductsTab({
   const handleDelete = async () => {
     if (!deleteTarget) return;
     setDeleting(true);
-    const table = deleteTarget.type === 'product' ? 'products' : 'services';
-    await supabase.from(table).delete().eq('id', deleteTarget.id);
-    setDeleteTarget(null);
-    setDeleting(false);
-    onRefresh();
+    try {
+      if (deleteTarget.type === 'product') {
+        // Bloquer si une commande de ce produit est en cours (ni livrée ni annulée)
+        const { data: activeItems } = await supabase
+          .from('order_items')
+          .select('id, order:orders!inner(status)')
+          .eq('product_id', deleteTarget.id)
+          .not('order.status', 'in', '("delivered","cancelled")')
+          .limit(1);
+        if (activeItems && activeItems.length > 0) {
+          Alert.alert(
+            'Suppression impossible',
+            "Une commande de ce produit est en cours. Attendez qu'elle soit livrée ou annulée avant de le supprimer."
+          );
+          return;
+        }
+        const { error } = await supabase.from('products').delete().eq('id', deleteTarget.id);
+        if (error) {
+          // Référencé par des commandes passées : on retire de la vente au lieu de supprimer
+          const { error: softErr } = await supabase
+            .from('products')
+            .update({ is_active: false, updated_at: new Date().toISOString() })
+            .eq('id', deleteTarget.id);
+          if (softErr) throw softErr;
+          Alert.alert('Produit retiré', "Ce produit a un historique de commandes : il a été retiré de la vente au lieu d'être supprimé définitivement.");
+        }
+      } else {
+        // Bloquer si une réservation de ce service est en cours
+        const { data: activeBookings } = await supabase
+          .from('service_bookings')
+          .select('id')
+          .eq('service_id', deleteTarget.id)
+          .not('status', 'in', '("completed","cancelled","expired")')
+          .limit(1);
+        if (activeBookings && activeBookings.length > 0) {
+          Alert.alert(
+            'Suppression impossible',
+            "Une réservation de ce service est en cours. Attendez qu'elle soit terminée ou annulée avant de le supprimer."
+          );
+          return;
+        }
+        // Supprimer un service efface ses réservations passées (cascade DB) : on le retire de la vente s'il a un historique
+        const { data: anyBooking } = await supabase
+          .from('service_bookings')
+          .select('id')
+          .eq('service_id', deleteTarget.id)
+          .limit(1);
+        if (anyBooking && anyBooking.length > 0) {
+          const { error: softErr } = await supabase
+            .from('services')
+            .update({ is_active: false, updated_at: new Date().toISOString() })
+            .eq('id', deleteTarget.id);
+          if (softErr) throw softErr;
+          Alert.alert('Service retiré', "Ce service a un historique de réservations : il a été retiré de la vente au lieu d'être supprimé définitivement.");
+        } else {
+          const { error } = await supabase.from('services').delete().eq('id', deleteTarget.id);
+          if (error) throw error;
+        }
+      }
+      setDeleteTarget(null);
+      onRefresh();
+    } catch (err: any) {
+      Alert.alert('Erreur', err?.message || 'La suppression a échoué. Veuillez réessayer.');
+    } finally {
+      setDeleting(false);
+    }
   };
 
   return (
@@ -300,7 +361,7 @@ function ServiceCard({ service, togglingId, onToggle, onEdit, onDelete }: {
           <Text style={cardStyles.price}>{formatPrice(service.price)} FCFA</Text>
           {service.requires_booking && (
             <View style={[cardStyles.conditionBadge, { backgroundColor: '#dbeafe' }]}>
-              <Text style={[cardStyles.conditionText, { color: '#2563eb' }]}>Reservation</Text>
+              <Text style={[cardStyles.conditionText, { color: '#2563eb' }]}>Réservation</Text>
             </View>
           )}
         </View>

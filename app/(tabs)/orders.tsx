@@ -222,7 +222,7 @@ export default function OrdersScreen() {
       const convoId = await startConversation(user.id, shop.owner_id);
       router.push(`/chat/${convoId}` as any);
     } catch (err) {
-      Alert.alert('Erreur', "Impossible d'ouvrir la conversation. Veuillez reessayer.");
+      Alert.alert('Erreur', "Impossible d'ouvrir la conversation. Veuillez réessayer.");
     } finally {
       setContactingVendor((prev) => ({ ...prev, [orderId]: false }));
     }
@@ -245,7 +245,7 @@ export default function OrdersScreen() {
       const convoId = await startConversation(user.id, delivery.driver_id);
       router.push(`/chat/${convoId}` as any);
     } catch (err) {
-      Alert.alert('Erreur', "Impossible d'ouvrir la conversation. Veuillez reessayer.");
+      Alert.alert('Erreur', "Impossible d'ouvrir la conversation. Veuillez réessayer.");
     } finally {
       setContactingDriver((prev) => ({ ...prev, [orderId]: false }));
     }
@@ -264,7 +264,7 @@ export default function OrdersScreen() {
       const convoId = await startConversation(user.id, adminId);
       router.push(`/chat/${convoId}` as any);
     } catch (err) {
-      Alert.alert('Erreur', "Impossible d'ouvrir la conversation. Veuillez reessayer.");
+      Alert.alert('Erreur', "Impossible d'ouvrir la conversation. Veuillez réessayer.");
     } finally {
       setContactingAdmin((prev) => ({ ...prev, [orderId]: false }));
     }
@@ -340,8 +340,8 @@ export default function OrdersScreen() {
         ) : bookings.length === 0 ? (
           <View style={styles.emptyContainer}>
             <Calendar color="#d0d0d0" size={64} strokeWidth={1.5} />
-            <Text style={styles.emptyTitle}>Aucune reservation</Text>
-            <Text style={styles.emptyText}>Vos reservations de prestations apparaitront ici</Text>
+            <Text style={styles.emptyTitle}>Aucune réservation</Text>
+            <Text style={styles.emptyText}>Vos réservations de prestations apparaitront ici</Text>
           </View>
         ) : (
           <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>

@@ -17,7 +17,7 @@ export default function AdminResetScreen() {
   const handleSubmit = async () => {
     setError(null);
     if (!phoneNumber) {
-      setError('Veuillez entrer votre numero de telephone');
+      setError('Veuillez entrer votre numéro de téléphone');
       return;
     }
 
@@ -54,7 +54,7 @@ export default function AdminResetScreen() {
 
         {success ? (
           <View style={styles.successCard}>
-            <Text style={styles.successTitle}>Demande envoyee</Text>
+            <Text style={styles.successTitle}>Demande envoyée</Text>
             <Text style={styles.successText}>
               Votre demande a ete transmise a un administrateur. Vous serez contacte prochainement.
             </Text>
@@ -73,7 +73,7 @@ export default function AdminResetScreen() {
               </View>
             )}
 
-            <Text style={styles.label}>Numero de telephone</Text>
+            <Text style={styles.label}>Numéro de téléphone</Text>
             <PhoneInput
               countryCode={countryCode}
               onCountryCodeChange={setCountryCode}

@@ -4,6 +4,7 @@ import { Search, Mic } from 'lucide-react-native';
 
 interface SearchBarProps {
   onSearch?: (query: string) => void;
+  onSubmit?: (query: string) => void;
   onVoiceSearch?: () => void;
   placeholder?: string;
   debounceMs?: number;
@@ -11,6 +12,7 @@ interface SearchBarProps {
 
 export default function SearchBar({
   onSearch,
+  onSubmit,
   onVoiceSearch,
   placeholder = 'Rechercher produits ou services...',
   debounceMs = 500,
@@ -39,6 +41,7 @@ export default function SearchBar({
           value={searchText}
           onChangeText={setSearchText}
           returnKeyType="search"
+          onSubmitEditing={() => onSubmit && onSubmit(searchText)}
         />
 
         {onVoiceSearch && (

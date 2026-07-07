@@ -48,7 +48,7 @@ export default function LoginScreen() {
     const fullPhone = `${countryCode}${phoneNumber}`;
 
     if (!phoneNumber) {
-      setError('Veuillez entrer votre numero de telephone');
+      setError('Veuillez entrer votre numéro de téléphone');
       return;
     }
     if (pin.length !== 6) {
@@ -65,7 +65,7 @@ export default function LoginScreen() {
         await setSessionFromTokens(accessToken, refreshToken);
         router.replace('/(tabs)');
       } else {
-        setError('Reponse invalide du serveur. Veuillez reessayer.');
+        setError('Réponse invalide du serveur. Veuillez réessayer.');
       }
     } catch (err: unknown) {
       const authErr = err as PhoneAuthError;
@@ -155,7 +155,7 @@ export default function LoginScreen() {
             </View>
           )}
 
-          <Text style={styles.label}>Numero de telephone</Text>
+          <Text style={styles.label}>Numéro de téléphone</Text>
           <PhoneInput
             countryCode={countryCode}
             onCountryCodeChange={setCountryCode}

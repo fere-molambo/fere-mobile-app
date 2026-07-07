@@ -103,7 +103,7 @@ export default function BookingCancellationModal({ visible, onClose, onConfirm, 
       <View style={styles.overlay}>
         <View style={styles.sheet}>
           <View style={styles.sheetHeader}>
-            <Text style={styles.sheetTitle}>Annuler la reservation</Text>
+            <Text style={styles.sheetTitle}>Annuler la réservation</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
               <X color="#666" size={24} />
             </TouchableOpacity>
@@ -143,7 +143,7 @@ export default function BookingCancellationModal({ visible, onClose, onConfirm, 
                 <Text style={[styles.label, { marginTop: 16 }]}>Commentaire</Text>
                 <TextInput
                   style={styles.commentInput}
-                  placeholder="Decrivez la raison..."
+                  placeholder="Décrivez la raison..."
                   placeholderTextColor="#aaa"
                   multiline
                   numberOfLines={3}

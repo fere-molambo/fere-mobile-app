@@ -53,7 +53,7 @@ const PREFERENCE_ITEMS: MenuItem[] = [
   },
   {
     icon: <Scale color="#003f2f" size={20} />,
-    label: 'Mentions legales',
+    label: 'Mentions légales',
     route: '/settings/legal',
   },
 ];
@@ -92,7 +92,7 @@ const VENDOR_PREFERENCE_ITEMS: MenuItem[] = [
   },
   {
     icon: <Scale color="#003f2f" size={20} />,
-    label: 'Mentions legales',
+    label: 'Mentions légales',
     route: '/settings/legal',
   },
 ];
@@ -177,7 +177,7 @@ export default function SettingsScreen() {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Preferences</Text>
+            <Text style={styles.sectionTitle}>Préférences</Text>
             {VENDOR_PREFERENCE_ITEMS.map(renderMenuItem)}
           </View>
 
@@ -187,7 +187,7 @@ export default function SettingsScreen() {
               onPress={() => setShowLogoutDialog(true)}
             >
               <LogOut color="#ff4444" size={20} />
-              <Text style={styles.logoutText}>Deconnexion</Text>
+              <Text style={styles.logoutText}>Déconnexion</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -202,9 +202,9 @@ export default function SettingsScreen() {
 
         <ConfirmDialog
           visible={showLogoutDialog}
-          title="Deconnexion"
+          title="Déconnexion"
           message="Etes-vous sur de vouloir vous deconnecter ?"
-          confirmText="Deconnexion"
+          confirmText="Déconnexion"
           cancelText="Annuler"
           onConfirm={handleLogout}
           onCancel={() => setShowLogoutDialog(false)}
@@ -234,7 +234,7 @@ export default function SettingsScreen() {
           </View>
 
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Preferences</Text>
+            <Text style={styles.sectionTitle}>Préférences</Text>
             {DRIVER_PREFERENCE_ITEMS.map(renderMenuItem)}
           </View>
 
@@ -244,7 +244,7 @@ export default function SettingsScreen() {
               onPress={() => setShowLogoutDialog(true)}
             >
               <LogOut color="#ff4444" size={20} />
-              <Text style={styles.logoutText}>Deconnexion</Text>
+              <Text style={styles.logoutText}>Déconnexion</Text>
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -259,9 +259,9 @@ export default function SettingsScreen() {
 
         <ConfirmDialog
           visible={showLogoutDialog}
-          title="Deconnexion"
+          title="Déconnexion"
           message="Etes-vous sur de vouloir vous deconnecter ?"
-          confirmText="Deconnexion"
+          confirmText="Déconnexion"
           cancelText="Annuler"
           onConfirm={handleLogout}
           onCancel={() => setShowLogoutDialog(false)}
@@ -290,7 +290,7 @@ export default function SettingsScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Preferences</Text>
+          <Text style={styles.sectionTitle}>Préférences</Text>
           {PREFERENCE_ITEMS.map(renderMenuItem)}
         </View>
 
@@ -300,7 +300,7 @@ export default function SettingsScreen() {
             onPress={() => setShowLogoutDialog(true)}
           >
             <LogOut color="#ff4444" size={20} />
-            <Text style={styles.logoutText}>Deconnexion</Text>
+            <Text style={styles.logoutText}>Déconnexion</Text>
           </TouchableOpacity>
 
           <TouchableOpacity
@@ -315,9 +315,9 @@ export default function SettingsScreen() {
 
       <ConfirmDialog
         visible={showLogoutDialog}
-        title="Deconnexion"
+        title="Déconnexion"
         message="Etes-vous sur de vouloir vous deconnecter ?"
-        confirmText="Deconnexion"
+        confirmText="Déconnexion"
         cancelText="Annuler"
         onConfirm={handleLogout}
         onCancel={() => setShowLogoutDialog(false)}

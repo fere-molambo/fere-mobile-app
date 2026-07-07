@@ -1,4 +1,5 @@
 import React, { useState } from 'react';
+import { useRouter } from 'expo-router';
 import { View, StyleSheet, ScrollView, RefreshControl } from 'react-native';
 import AppHeader from '@/components/AppHeader';
 import SearchBar from '@/components/SearchBar';
@@ -13,6 +14,7 @@ import DriverHomeScreen from '@/components/driver/DriverHomeScreen';
 import VendorHomeScreen from '@/components/vendor/VendorHomeScreen';
 
 export default function HomeScreen() {
+  const router = useRouter();
   const { userRole, user } = useAuth();
   const [refreshing, setRefreshing] = useState(false);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
@@ -35,12 +37,14 @@ export default function HomeScreen() {
   };
 
   const handleSearch = (query: string) => {
-    console.log('Searching for:', query);
+    if (query.trim().length >= 2) {
+      router.push({ pathname: '/search', params: { q: query.trim() } } as any);
+    }
   };
 
   return (
     <View style={styles.container}>
-      <AppHeader notificationCount={3} cartItemsCount={0} />
+      <AppHeader cartItemsCount={0} />
 
       <ScrollView
         style={styles.scrollView}
@@ -49,7 +53,7 @@ export default function HomeScreen() {
           <RefreshControl refreshing={refreshing} onRefresh={handleRefresh} />
         }
       >
-        <SearchBar onSearch={handleSearch} />
+        <SearchBar onSubmit={handleSearch} />
 
         <HeroCarousel />
 

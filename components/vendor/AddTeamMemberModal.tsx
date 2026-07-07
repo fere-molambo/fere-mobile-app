@@ -39,7 +39,7 @@ export default function AddTeamMemberModal({ visible, onClose, shopId, vendorUse
       return;
     }
     if (password.length < 6) {
-      setError('Le mot de passe doit contenir au moins 6 caracteres');
+      setError('Le mot de passe doit contenir au moins 6 caractères');
       return;
     }
 
@@ -66,7 +66,7 @@ export default function AddTeamMemberModal({ visible, onClose, shopId, vendorUse
 
       const result = await res.json();
       if (!res.ok) {
-        setError(result.error || 'Erreur lors de la creation du compte');
+        setError(result.error || 'Erreur lors de la création du compte');
         setLoading(false);
         return;
       }
@@ -126,7 +126,7 @@ export default function AddTeamMemberModal({ visible, onClose, shopId, vendorUse
                 style={styles.input}
                 value={name}
                 onChangeText={setName}
-                placeholder="Nom et prenom"
+                placeholder="Nom et prénom"
                 placeholderTextColor="#aaa"
               />
             </View>
@@ -145,7 +145,7 @@ export default function AddTeamMemberModal({ visible, onClose, shopId, vendorUse
             </View>
 
             <View style={styles.field}>
-              <Text style={styles.label}>Telephone</Text>
+              <Text style={styles.label}>Téléphone</Text>
               <TextInput
                 style={styles.input}
                 value={phone}
@@ -161,7 +161,7 @@ export default function AddTeamMemberModal({ visible, onClose, shopId, vendorUse
               <PasswordInput
                 value={password}
                 onChangeText={setPassword}
-                placeholder="Minimum 6 caracteres"
+                placeholder="Minimum 6 caractères"
               />
             </View>
 

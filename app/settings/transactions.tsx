@@ -177,7 +177,7 @@ export default function RefundsScreen() {
             <Text style={styles.emptyTitle}>
               {activeTab === 'pending'
                 ? 'Aucun remboursement en attente'
-                : 'Aucun remboursement traite'}
+                : 'Aucun remboursement traité'}
             </Text>
             <Text style={styles.emptySubtitle}>
               Les remboursements lies aux commandes et prestations annulees apparaitront ici.

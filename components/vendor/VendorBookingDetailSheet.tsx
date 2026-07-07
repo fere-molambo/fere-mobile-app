@@ -95,7 +95,7 @@ export default function VendorBookingDetailSheet({ booking, onClose, onAction, v
       <View style={styles.overlay}>
         <View style={styles.sheet}>
           <View style={styles.sheetHeader}>
-            <Text style={styles.sheetTitle}>Detail de la reservation</Text>
+            <Text style={styles.sheetTitle}>Détail de la réservation</Text>
             <TouchableOpacity onPress={onClose} style={styles.closeBtn}>
               <X color="#666" size={24} />
             </TouchableOpacity>
@@ -188,7 +188,7 @@ export default function VendorBookingDetailSheet({ booking, onClose, onAction, v
                     <Text style={styles.priceLabel}>Deplacement</Text>
                   </View>
                   <Text style={styles.priceValue}>
-                    {formatPrice(booking.travel_fee)} FCFA {booking.travel_fee_paid ? '(paye)' : ''}
+                    {formatPrice(booking.travel_fee)} FCFA {booking.travel_fee_paid ? '(payé)' : ''}
                   </Text>
                 </View>
               )}

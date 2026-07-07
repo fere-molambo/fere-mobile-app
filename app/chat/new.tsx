@@ -53,7 +53,7 @@ export default function NewConversationScreen() {
       const conversationId = await startConversation(user.id, contactId);
       router.replace(`/chat/${conversationId}` as any);
     } catch (err) {
-      Alert.alert('Erreur', "Impossible de creer la conversation. Veuillez reessayer.");
+      Alert.alert('Erreur', "Impossible de creer la conversation. Veuillez réessayer.");
       setStarting(null);
     }
   }, [user, starting, router]);

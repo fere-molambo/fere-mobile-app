@@ -79,7 +79,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="settings"
           options={{
-            title: 'Parametres',
+            title: 'Paramètres',
             tabBarIcon: ({ size, color }) => (
               <Settings size={size} color={color} />
             ),
@@ -132,7 +132,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="settings"
           options={{
-            title: 'Parametres',
+            title: 'Paramètres',
             tabBarIcon: ({ size, color }) => (
               <Settings size={size} color={color} />
             ),
@@ -195,7 +195,7 @@ export default function TabLayout() {
         <Tabs.Screen
           name="settings"
           options={{
-            title: 'Parametres',
+            title: 'Paramètres',
             tabBarIcon: ({ size, color }) => (
               <Settings size={size} color={color} />
             ),
@@ -256,7 +256,7 @@ export default function TabLayout() {
       <Tabs.Screen
         name="settings"
         options={{
-          title: 'Parametres',
+          title: 'Paramètres',
           tabBarIcon: ({ size, color }) => (
             <Settings size={size} color={color} />
           ),

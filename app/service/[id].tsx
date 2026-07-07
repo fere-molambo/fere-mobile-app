@@ -28,6 +28,7 @@ import {
   Truck,
   RotateCcw,
 } from 'lucide-react-native';
+import { supabase } from '@/lib/supabase';
 import { useServiceDetail } from '@/hooks/useServiceDetail';
 import { useSimilarServices } from '@/hooks/useSimilarServices';
 import { useAuth } from '@/contexts/AuthContext';

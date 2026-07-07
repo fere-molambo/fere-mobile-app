@@ -37,7 +37,7 @@ export default function RegisterScreen() {
     setPinError(null);
 
     if (!nomComplet || !phoneNumber) {
-      setError('Veuillez remplir le nom et le telephone');
+      setError('Veuillez remplir le nom et le téléphone');
       return;
     }
 
@@ -125,7 +125,7 @@ export default function RegisterScreen() {
             />
           </View>
 
-          <Text style={styles.label}>Numero de telephone</Text>
+          <Text style={styles.label}>Numéro de téléphone</Text>
           <PhoneInput
             countryCode={countryCode}
             onCountryCodeChange={setCountryCode}

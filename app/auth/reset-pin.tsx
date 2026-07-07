@@ -45,7 +45,7 @@ export default function ResetPinScreen() {
   const handleSendCode = async () => {
     setError(null);
     if (!phoneNumber) {
-      setError('Veuillez entrer votre numero de telephone');
+      setError('Veuillez entrer votre numéro de téléphone');
       return;
     }
 
@@ -124,14 +124,14 @@ export default function ResetPinScreen() {
           <Text style={styles.title}>Reinitialiser le PIN</Text>
           <Text style={styles.subtitle}>
             {step === 1
-              ? 'Entrez votre numero pour recevoir un code de verification'
+              ? 'Entrez votre numéro pour recevoir un code de verification'
               : 'Entrez le code recu et votre nouveau PIN'}
           </Text>
         </View>
 
         {success && (
           <View style={styles.successBanner}>
-            <Text style={styles.successText}>PIN reinitialise avec succes !</Text>
+            <Text style={styles.successText}>PIN reinitialise avec succès !</Text>
           </View>
         )}
 
@@ -143,7 +143,7 @@ export default function ResetPinScreen() {
 
         {step === 1 && (
           <View>
-            <Text style={styles.label}>Numero de telephone</Text>
+            <Text style={styles.label}>Numéro de téléphone</Text>
             <PhoneInput
               countryCode={countryCode}
               onCountryCodeChange={setCountryCode}

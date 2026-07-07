@@ -115,7 +115,7 @@ export default function OtpVerificationScreen() {
 
         {success && (
           <View style={styles.successBanner}>
-            <Text style={styles.successText}>Compte cree avec succes !</Text>
+            <Text style={styles.successText}>Compte cree avec succès !</Text>
           </View>
         )}
 
@@ -142,7 +142,7 @@ export default function OtpVerificationScreen() {
           disabled={loading || success}
         >
           <Text style={styles.verifyButtonText}>
-            {loading ? 'Verification...' : success ? 'Redirection...' : 'Verifier'}
+            {loading ? 'Verification...' : success ? 'Redirection...' : 'Vérifier'}
           </Text>
         </TouchableOpacity>
 

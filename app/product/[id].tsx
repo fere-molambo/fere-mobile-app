@@ -26,6 +26,7 @@ import {
   Plus,
   ShoppingCart,
 } from 'lucide-react-native';
+import { supabase } from '@/lib/supabase';
 import { useProductDetail } from '@/hooks/useProductDetail';
 import { useSimilarProducts } from '@/hooks/useSimilarProducts';
 import { useCart } from '@/contexts/CartContext';

@@ -83,7 +83,7 @@ export default function VendorInfoTab({ profile, onUpdate }: Props) {
         .eq('id', profile.id);
 
       if (error) throw error;
-      setMessage({ type: 'success', text: 'Informations enregistrees avec succes' });
+      setMessage({ type: 'success', text: 'Informations enregistrées avec succès' });
       onUpdate();
     } catch (err: any) {
       setMessage({ type: 'error', text: err.message || 'Erreur lors de la sauvegarde' });

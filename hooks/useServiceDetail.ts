@@ -39,7 +39,7 @@ export function useServiceDetail(serviceId: string) {
       setService(data as Service);
     } catch (err: any) {
       setError(err.message);
-      console.error('Error fetching service detail:', err);
+      console.error('Error fetching service détail:', err);
     } finally {
       setLoading(false);
     }

@@ -79,7 +79,7 @@ export default function NotificationsScreen() {
         </View>
 
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Preferences</Text>
+          <Text style={styles.sectionTitle}>Préférences</Text>
           {fields.map((field, index) => {
             const meta = PREFERENCE_LABELS[field];
             if (!meta) return null;

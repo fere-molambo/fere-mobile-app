@@ -1,8 +1,11 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Platform, Image } from 'react-native';
 import { Bell, ShoppingCart } from 'lucide-react-native';
+import { useRouter } from 'expo-router';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useAuth } from '@/contexts/AuthContext';
 import { useCart } from '@/contexts/CartContext';
+import { useChat } from '@/contexts/ChatContext';
 
 interface AppHeaderProps {
   onNotificationPress?: () => void;
@@ -11,14 +14,19 @@ interface AppHeaderProps {
   hideCart?: boolean;
 }
 
-export default function AppHeader({ onNotificationPress, notificationCount = 0, cartItemsCount = 0, hideCart = false }: AppHeaderProps) {
+export default function AppHeader({ onNotificationPress, notificationCount, cartItemsCount = 0, hideCart = false }: AppHeaderProps) {
   const { profile } = useAuth();
   const { openCart } = useCart();
+  const router = useRouter();
+  const insets = useSafeAreaInsets();
+  const { totalUnreadCount } = useChat();
+  const badgeCount = notificationCount ?? totalUnreadCount;
+  const handleNotificationPress = onNotificationPress || (() => router.push('/notifications' as any));
 
   const firstName = profile?.nom_complet?.split(' ')[0] || 'Utilisateur';
 
   return (
-    <View style={styles.container}>
+    <View style={[styles.container, { paddingTop: Math.max(insets.top, 12) + 4 }]}>
       <View style={styles.leftSection}>
         <Image
           source={require('@/assets/images/Logo_fere2.png')}
@@ -48,14 +56,14 @@ export default function AppHeader({ onNotificationPress, notificationCount = 0, 
 
         <TouchableOpacity
           style={styles.iconButton}
-          onPress={onNotificationPress}
+          onPress={handleNotificationPress}
           activeOpacity={0.7}
         >
           <Bell color="#003f2f" size={24} strokeWidth={2} />
-          {notificationCount > 0 && (
+          {badgeCount > 0 && (
             <View style={styles.badge}>
               <Text style={styles.badgeText}>
-                {notificationCount > 99 ? '99+' : notificationCount}
+                {badgeCount > 99 ? '99+' : badgeCount}
               </Text>
             </View>
           )}
@@ -71,7 +79,6 @@ const styles = StyleSheet.create({
     justifyContent: 'space-between',
     alignItems: 'center',
     paddingHorizontal: 16,
-    paddingTop: Platform.OS === 'ios' ? 50 : 16,
     paddingBottom: 16,
     backgroundColor: '#fff',
     borderBottomWidth: 1,

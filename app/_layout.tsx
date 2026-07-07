@@ -49,6 +49,8 @@ function RootLayoutInner() {
         <Stack.Screen name="booking/[serviceId]" options={{ headerShown: false }} />
         <Stack.Screen name="booking-detail" options={{ headerShown: false }} />
         <Stack.Screen name="chat/[id]" options={{ headerShown: false }} />
+        <Stack.Screen name="notifications" options={{ headerShown: false }} />
+        <Stack.Screen name="search" options={{ headerShown: false }} />
         <Stack.Screen name="chat/new" options={{ headerShown: false }} />
         <Stack.Screen name="+not-found" />
       </Stack>

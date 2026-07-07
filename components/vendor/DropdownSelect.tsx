@@ -21,7 +21,7 @@ export default function DropdownSelect({ label, value, options, onChange, placeh
   const [open, setOpen] = useState(false);
 
   const selected = options.find((o) => o.value === value);
-  const displayText = selected?.label || placeholder || 'Selectionner...';
+  const displayText = selected?.label || placeholder || 'Sélectionner...';
 
   return (
     <View>

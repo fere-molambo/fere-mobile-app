@@ -32,7 +32,7 @@ export default function AvailableDeliveries({ deliveries, loading, userId, onRef
       if (error) throw error;
       onRefresh();
     } catch {
-      Alert.alert('Erreur', 'Impossible d\'accepter cette livraison. Elle a peut-etre deja ete prise.');
+      Alert.alert('Erreur', 'Impossible d\'accepter cette livraison. Elle a peut-etre déjà été prise.');
     } finally {
       setAcceptingId(null);
     }

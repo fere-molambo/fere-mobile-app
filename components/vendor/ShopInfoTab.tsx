@@ -165,7 +165,7 @@ export default function ShopInfoTab({ shop, onUpdate }: Props) {
 
       const { error } = await supabase.from('shops').update(updates).eq('id', shop.id);
       if (error) throw error;
-      setMessage({ type: 'success', text: 'Informations enregistrees avec succes' });
+      setMessage({ type: 'success', text: 'Informations enregistrées avec succès' });
       onUpdate();
     } catch (err: any) {
       setMessage({ type: 'error', text: err.message || 'Erreur lors de la sauvegarde' });
@@ -216,7 +216,7 @@ export default function ShopInfoTab({ shop, onUpdate }: Props) {
         </View>
 
         <View style={styles.field}>
-          <Text style={styles.label}>Telephone de contact</Text>
+          <Text style={styles.label}>Téléphone de contact</Text>
           <TextInput style={styles.input} value={contactPhone} onChangeText={setContactPhone} placeholder="+223XXXXXXXXX" placeholderTextColor="#9ca3af" keyboardType="phone-pad" />
         </View>
 
@@ -226,7 +226,7 @@ export default function ShopInfoTab({ shop, onUpdate }: Props) {
         </View>
 
         <View style={styles.field}>
-          <Text style={styles.label}>Telephone support</Text>
+          <Text style={styles.label}>Téléphone support</Text>
           <TextInput style={styles.input} value={supportPhone} onChangeText={setSupportPhone} placeholder="+223XXXXXXXXX" placeholderTextColor="#9ca3af" keyboardType="phone-pad" />
         </View>
 
@@ -270,7 +270,7 @@ export default function ShopInfoTab({ shop, onUpdate }: Props) {
         )}
 
         <View style={styles.field}>
-          <Text style={styles.label}>Details de livraison</Text>
+          <Text style={styles.label}>Détails de livraison</Text>
           <TextInput style={[styles.input, styles.textArea]} value={deliveryDetails} onChangeText={setDeliveryDetails} placeholder="Informations sur la livraison" placeholderTextColor="#9ca3af" multiline numberOfLines={3} textAlignVertical="top" />
         </View>
 
@@ -301,7 +301,7 @@ export default function ShopInfoTab({ shop, onUpdate }: Props) {
         <View style={styles.teamHeader}>
           <View style={styles.teamTitleRow}>
             <Users size={18} color="#003f2f" />
-            <Text style={styles.cardTitle}>Equipe</Text>
+            <Text style={styles.cardTitle}>Équipe</Text>
           </View>
           <TouchableOpacity style={styles.addMemberBtn} onPress={() => setShowAddMember(true)}>
             <UserPlus size={14} color="#fff" />

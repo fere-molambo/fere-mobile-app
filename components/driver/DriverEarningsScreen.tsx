@@ -239,7 +239,7 @@ export default function DriverEarningsScreen({ userId }: DriverEarningsScreenPro
             </View>
             <View style={styles.summarySmallCard}>
               <CheckCircle size={16} color="#16a34a" />
-              <Text style={styles.smallLabel}>Total paye</Text>
+              <Text style={styles.smallLabel}>Total payé</Text>
               <Text style={styles.smallValueGreen}>{formatEarnings(totalPaid)}</Text>
             </View>
           </View>
@@ -314,7 +314,7 @@ export default function DriverEarningsScreen({ userId }: DriverEarningsScreenPro
                   <View style={styles.earningsFooter}>
                     {delivery.status === 'cancelled' && payouts[delivery.id] ? (
                       <View style={cancelledBadgeStyles.badge}>
-                        <Text style={cancelledBadgeStyles.text}>Annulee a l'arrivee</Text>
+                        <Text style={cancelledBadgeStyles.text}>Annulée a l'arrivee</Text>
                       </View>
                     ) : (
                       <DeliveryStatusBadge status={delivery.status} />

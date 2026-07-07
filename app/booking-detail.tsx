@@ -35,7 +35,7 @@ const PROGRESS_STEPS: { key: BookingStatus; label: string }[] = [
   { key: 'accepted', label: 'Acceptee' },
   { key: 'on_the_way', label: 'En route' },
   { key: 'arrived', label: 'Sur place' },
-  { key: 'completed', label: 'Terminee' },
+  { key: 'completed', label: 'Terminée' },
 ];
 
 function getStepIndex(status: BookingStatus): number {
@@ -279,7 +279,7 @@ export default function BookingDetailScreen() {
     return (
       <View style={styles.loadingContainer}>
         <Stack.Screen options={{ headerShown: false }} />
-        <Text style={styles.emptyText}>Reservation introuvable</Text>
+        <Text style={styles.emptyText}>Réservation introuvable</Text>
       </View>
     );
   }
@@ -299,7 +299,7 @@ export default function BookingDetailScreen() {
         <TouchableOpacity onPress={() => { if (router.canGoBack()) router.back(); else router.replace('/' as any); }} style={styles.backBtn}>
           <ArrowLeft color="#333" size={24} />
         </TouchableOpacity>
-        <Text style={styles.headerTitle}>Suivi de reservation</Text>
+        <Text style={styles.headerTitle}>Suivi de réservation</Text>
         <View style={{ width: 40 }} />
       </View>
 
@@ -400,7 +400,7 @@ export default function BookingDetailScreen() {
           {booking.travel_fee > 0 && (
             <View style={styles.priceRow}>
               <Text style={styles.priceLabel}>
-                Deplacement {booking.travel_fee_paid ? '(paye)' : ''}
+                Deplacement {booking.travel_fee_paid ? '(payé)' : ''}
               </Text>
               <Text style={styles.priceValue}>{formatPrice(booking.travel_fee)} FCFA</Text>
             </View>
@@ -448,7 +448,7 @@ export default function BookingDetailScreen() {
 
         {isArrivedForPayment && (
           <View style={styles.actionsCard}>
-            <Text style={styles.actionsTitle}>Prestation terminee ?</Text>
+            <Text style={styles.actionsTitle}>Prestation terminée ?</Text>
 
             {paymentError && (
               <View style={styles.paymentErrorRow}>
@@ -499,7 +499,7 @@ export default function BookingDetailScreen() {
             onPress={() => setCancelModalVisible(true)}
           >
             <XCircle color="#dc2626" size={20} />
-            <Text style={styles.cancelBookingBtnText}>Annuler la reservation</Text>
+            <Text style={styles.cancelBookingBtnText}>Annuler la réservation</Text>
           </TouchableOpacity>
         )}
 
@@ -507,7 +507,7 @@ export default function BookingDetailScreen() {
           <View style={styles.completedCard}>
             <CheckCircle color="#16a34a" size={24} />
             <Text style={styles.completedTitle}>
-              {status === 'partial' ? 'Prestation terminee a 50%' : 'Prestation terminee'}
+              {status === 'partial' ? 'Prestation terminée à 50%' : 'Prestation terminée'}
             </Text>
             {booking.completed_at && (
               <Text style={styles.completedDate}>
@@ -522,7 +522,7 @@ export default function BookingDetailScreen() {
         {status === 'cancelled' && (
           <View style={styles.cancelledCard}>
             <XCircle color="#dc2626" size={24} />
-            <Text style={styles.cancelledTitle}>Reservation annulee</Text>
+            <Text style={styles.cancelledTitle}>Réservation annulée</Text>
             {booking.cancellation_reason && (
               <Text style={styles.cancelledReason}>
                 Motif : {(booking.cancellation_reason as any).label}

@@ -26,8 +26,8 @@ const ORDER_STATUS_MAP: Record<string, { label: string; color: string; bg: strin
   confirmed: { label: 'Confirmee', color: '#3b82f6', bg: '#dbeafe' },
   preparing: { label: 'En preparation', color: '#ca8a04', bg: '#fef9c3' },
   shipped: { label: 'En livraison', color: '#0891b2', bg: '#cffafe' },
-  delivered: { label: 'Livree', color: '#16a34a', bg: '#dcfce7' },
-  cancelled: { label: 'Annulee', color: '#ef4444', bg: '#fee2e2' },
+  delivered: { label: 'Livrée', color: '#16a34a', bg: '#dcfce7' },
+  cancelled: { label: 'Annulée', color: '#ef4444', bg: '#fee2e2' },
 };
 
 const ORDER_STATUS_OPTIONS = [
@@ -36,8 +36,8 @@ const ORDER_STATUS_OPTIONS = [
   { key: 'confirmed', label: 'Confirmee' },
   { key: 'preparing', label: 'En preparation' },
   { key: 'shipped', label: 'En livraison' },
-  { key: 'delivered', label: 'Livree' },
-  { key: 'cancelled', label: 'Annulee' },
+  { key: 'delivered', label: 'Livrée' },
+  { key: 'cancelled', label: 'Annulée' },
 ];
 
 const BOOKING_STATUS_OPTIONS = [
@@ -46,22 +46,22 @@ const BOOKING_STATUS_OPTIONS = [
   { key: 'accepted', label: 'Acceptee' },
   { key: 'on_the_way', label: 'En route' },
   { key: 'arrived', label: 'Sur place' },
-  { key: 'completed', label: 'Terminee' },
+  { key: 'completed', label: 'Terminée' },
   { key: 'partial', label: 'Partielle' },
-  { key: 'cancelled', label: 'Annulee' },
+  { key: 'cancelled', label: 'Annulée' },
 ];
 
 const ORDER_PAYMENT_OPTIONS = [
   { key: 'all', label: 'Tous' },
   { key: 'pending', label: 'En attente' },
-  { key: 'advance_paid', label: 'Acompte paye' },
+  { key: 'advance_paid', label: 'Acompte payé' },
   { key: 'paid', label: 'Paye' },
 ];
 
 const BOOKING_PAYMENT_OPTIONS = [
   { key: 'all', label: 'Tous' },
-  { key: 'pending', label: 'Non paye' },
-  { key: 'partial', label: 'Acompte paye' },
+  { key: 'pending', label: 'Non payé' },
+  { key: 'partial', label: 'Acompte payé' },
   { key: 'paid', label: 'Paye' },
 ];
 
@@ -213,13 +213,13 @@ export default function VendorOrdersScreen({ userId, userRole }: Props) {
     const target = bookings.find((b) => b.id === bookingId);
     if (target?.customer?.id) {
       const notifMap: Record<string, string> = {
-        accept: 'Votre reservation a ete acceptee',
+        accept: 'Votre réservation a été acceptee',
         on_the_way: 'Le prestataire est en route vers vous',
         arrived: 'Le prestataire est arrive sur place',
       };
       const msg = notifMap[action];
       if (msg) {
-        sendNotificationToUser(target.customer.id, 'Reservation', msg).catch(() => {});
+        sendNotificationToUser(target.customer.id, 'Réservation', msg).catch(() => {});
       }
     }
 
@@ -338,7 +338,7 @@ export default function VendorOrdersScreen({ userId, userRole }: Props) {
       <OrderFilters
         searchQuery={searchQuery}
         onSearchChange={setSearchQuery}
-        searchPlaceholder={tab === 'products' ? 'Rechercher par nom, numero...' : 'Rechercher par service, client...'}
+        searchPlaceholder={tab === 'products' ? 'Rechercher par nom, numéro...' : 'Rechercher par service, client...'}
         datePreset={datePreset}
         onDatePresetChange={setDatePreset}
         statusFilter={statusFilter}
@@ -450,7 +450,7 @@ export default function VendorOrdersScreen({ userId, userRole }: Props) {
                 <Text style={styles.emptySectionText}>
                   {searchQuery || statusFilter !== 'all' || paymentFilter !== 'all' || datePreset !== 'all'
                     ? 'Aucun resultat pour ces filtres'
-                    : 'Aucune reservation de prestation'}
+                    : 'Aucune réservation de prestation'}
                 </Text>
               </View>
             )}

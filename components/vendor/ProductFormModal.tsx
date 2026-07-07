@@ -55,7 +55,7 @@ const PRICE_TYPES = [
 const CONDITIONS = [
   { value: 'neuf', label: 'Neuf' },
   { value: 'occasion', label: 'Occasion' },
-  { value: 'reconditionne', label: 'Reconditionne' },
+  { value: 'reconditionné', label: 'Reconditionné' },
 ];
 
 const PRODUCT_TYPES = [
@@ -365,7 +365,7 @@ export default function ProductFormModal({ visible, shopId, product, onClose, on
           <View style={styles.row}>
             <View style={[styles.field, { flex: 1 }]}>
               <DropdownSelect
-                label="Categorie"
+                label="Catégorie"
                 value={categoryId || ''}
                 options={categoryOptions}
                 onChange={(v) => setCategoryId(v || null)}
@@ -378,7 +378,7 @@ export default function ProductFormModal({ visible, shopId, product, onClose, on
                 value={subcategoryId || ''}
                 options={subcategoryOptions}
                 onChange={(v) => setSubcategoryId(v || null)}
-                placeholder="Selectionner une..."
+                placeholder="Sélectionner une..."
               />
             </View>
           </View>
@@ -432,7 +432,7 @@ export default function ProductFormModal({ visible, shopId, product, onClose, on
             </View>
             <View style={[styles.field, { flex: 1 }]}>
               <DropdownSelect
-                label="Etat du produit"
+                label="État du produit"
                 value={condition}
                 options={CONDITIONS}
                 onChange={setCondition}
@@ -452,7 +452,7 @@ export default function ProductFormModal({ visible, shopId, product, onClose, on
           </View>
 
           <View style={styles.field}>
-            <Text style={styles.label}>Reduction (%)</Text>
+            <Text style={styles.label}>Réduction (%)</Text>
             <TextInput style={styles.input} value={discountPercent} onChangeText={setDiscountPercent} placeholder="0" placeholderTextColor="#9ca3af" keyboardType="numeric" />
           </View>
 

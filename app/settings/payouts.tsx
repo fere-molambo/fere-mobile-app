@@ -186,7 +186,7 @@ export default function PayoutsScreen() {
             <Text style={styles.emptyTitle}>
               {activeTab === 'pending'
                 ? 'Aucun versement en attente'
-                : 'Aucun versement traite'}
+                : 'Aucun versement traité'}
             </Text>
             <Text style={styles.emptySubtitle}>
               Vos versements apparaitront ici.

@@ -11,15 +11,15 @@ export const BOOKING_STATUS_CONFIGS: Record<BookingStatus, StatusConfig> = {
   accepted: { label: 'Acceptee', color: '#2563eb', bg: '#dbeafe' },
   on_the_way: { label: 'En route', color: '#0f766e', bg: '#ccfbf1' },
   arrived: { label: 'Sur place', color: '#c2410c', bg: '#ffedd5' },
-  completed: { label: 'Terminee', color: '#16a34a', bg: '#dcfce7' },
+  completed: { label: 'Terminée', color: '#16a34a', bg: '#dcfce7' },
   partial: { label: 'Partielle', color: '#c2410c', bg: '#ffedd5' },
-  cancelled: { label: 'Annulee', color: '#dc2626', bg: '#fee2e2' },
+  cancelled: { label: 'Annulée', color: '#dc2626', bg: '#fee2e2' },
   expired: { label: 'Expiree', color: '#6b7280', bg: '#f3f4f6' },
 };
 
 export const PAYMENT_STATUS_CONFIGS: Record<BookingPaymentStatus, StatusConfig> = {
-  pending: { label: 'Non paye', color: '#ca8a04', bg: '#fef9c3' },
-  partial: { label: 'Acompte paye', color: '#c2410c', bg: '#ffedd5' },
+  pending: { label: 'Non payé', color: '#ca8a04', bg: '#fef9c3' },
+  partial: { label: 'Acompte payé', color: '#c2410c', bg: '#ffedd5' },
   paid: { label: 'Paye', color: '#16a34a', bg: '#dcfce7' },
   not_required: { label: 'N/A', color: '#6b7280', bg: '#f3f4f6' },
 };

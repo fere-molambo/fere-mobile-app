@@ -319,7 +319,7 @@ export default function ServiceFormModal({ visible, shopId, service, onClose, on
           </View>
 
           <View style={styles.field}>
-            <Text style={styles.label}>Reduction (%)</Text>
+            <Text style={styles.label}>Réduction (%)</Text>
             <TextInput style={styles.input} value={discountPercent} onChangeText={setDiscountPercent} placeholder="0" placeholderTextColor="#9ca3af" keyboardType="numeric" />
           </View>
 

@@ -41,7 +41,7 @@ export function useProductDetail(productId: string) {
       setProduct(data as Product);
     } catch (err: any) {
       setError(err.message);
-      console.error('Error fetching product detail:', err);
+      console.error('Error fetching product détail:', err);
     } finally {
       setLoading(false);
     }

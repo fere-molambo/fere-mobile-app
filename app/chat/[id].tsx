@@ -1,4 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback } from 'react';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import {
   View,
   Text,
@@ -253,7 +254,7 @@ export default function ConversationDetailScreen() {
         .createSignedUrl(fileName, 365 * 24 * 60 * 60);
 
       const mediaUrl = urlData?.signedUrl;
-      if (!mediaUrl) throw new Error('URL creation failed');
+      if (!mediaUrl) throw new Error('URL création failed');
 
       await supabase.from('messages').insert({
         conversation_id: id,
@@ -352,7 +353,7 @@ export default function ConversationDetailScreen() {
         .createSignedUrl(fileName, 365 * 24 * 60 * 60);
 
       const mediaUrl = urlData?.signedUrl;
-      if (!mediaUrl) throw new Error('URL creation failed');
+      if (!mediaUrl) throw new Error('URL création failed');
 
       await supabase.from('messages').insert({
         conversation_id: id,
@@ -463,7 +464,7 @@ export default function ConversationDetailScreen() {
           <View style={styles.failedActions}>
             <TouchableOpacity style={styles.failedBtn} onPress={() => handleRetryMessage(item)}>
               <RotateCcw size={12} color="#e67e22" />
-              <Text style={styles.failedBtnText}>Reessayer</Text>
+              <Text style={styles.failedBtnText}>Réessayer</Text>
             </TouchableOpacity>
             <TouchableOpacity style={styles.failedBtn} onPress={() => handleDeleteMessage(item.id)}>
               <Trash2 size={12} color="#ef4444" />
@@ -490,10 +491,10 @@ export default function ConversationDetailScreen() {
   return (
     <KeyboardAvoidingView
       style={styles.container}
-      behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
       keyboardVerticalOffset={0}
     >
-      <View style={styles.header}>
+      <View style={[styles.header, { paddingTop: insets.top + 10 }]}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
           <ArrowLeft size={24} color="#003f2f" />
         </TouchableOpacity>
@@ -516,7 +517,7 @@ export default function ConversationDetailScreen() {
               <TouchableOpacity style={styles.menuItem} onPress={handleBlockToggle}>
                 <Ban size={16} color={blockedByMe ? '#16a34a' : '#ef4444'} />
                 <Text style={[styles.menuItemText, { color: blockedByMe ? '#16a34a' : '#ef4444' }]}>
-                  {blockedByMe ? 'Debloquer' : 'Bloquer'}
+                  {blockedByMe ? 'Débloquer' : 'Bloquer'}
                 </Text>
               </TouchableOpacity>
             </View>
@@ -527,9 +528,9 @@ export default function ConversationDetailScreen() {
       {blockedByMe && (
         <View style={styles.blockedBanner}>
           <Ban size={16} color="#991b1b" />
-          <Text style={styles.blockedText}>Vous avez bloque cet utilisateur</Text>
+          <Text style={styles.blockedText}>Vous avez bloqué cet utilisateur</Text>
           <TouchableOpacity onPress={handleBlockToggle}>
-            <Text style={styles.unblockLink}>Debloquer</Text>
+            <Text style={styles.unblockLink}>Débloquer</Text>
           </TouchableOpacity>
         </View>
       )}
@@ -537,7 +538,7 @@ export default function ConversationDetailScreen() {
       {isBlocked && (
         <View style={styles.blockedBanner}>
           <Ban size={16} color="#991b1b" />
-          <Text style={styles.blockedText}>Cet utilisateur vous a bloque</Text>
+          <Text style={styles.blockedText}>Cet utilisateur vous a bloqué</Text>
         </View>
       )}
 
@@ -562,7 +563,7 @@ export default function ConversationDetailScreen() {
       )}
 
       {canSend && (
-        <View style={styles.inputBar}>
+        <View style={[styles.inputBar, { paddingBottom: 10 + insets.bottom }]}>
           {isRecording ? (
             <View style={styles.recordingBar}>
               <View style={styles.recordingDot} />

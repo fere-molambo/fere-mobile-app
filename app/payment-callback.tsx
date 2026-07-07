@@ -94,11 +94,11 @@ export default function PaymentCallbackScreen() {
             : 'error';
 
           if (normalized === 'failed') {
-            setErrorMessage('Le paiement n\'a pas abouti. Veuillez reessayer.');
+            setErrorMessage('Le paiement n\'a pas abouti. Veuillez réessayer.');
           } else if (normalized === 'abandoned') {
-            setErrorMessage('Le paiement a ete abandonne. Vous pouvez reessayer.');
+            setErrorMessage('Le paiement a été abandonné. Vous pouvez réessayer.');
           } else {
-            setErrorMessage('Statut de paiement inconnu. Veuillez verifier dans vos reservations ou commandes.');
+            setErrorMessage('Statut de paiement inconnu. Veuillez vérifier dans vos réservations ou commandes.');
           }
           setStatus('failed');
           setCompletedMode(result.payment_mode);
@@ -156,19 +156,19 @@ export default function PaymentCallbackScreen() {
   }
 
   if (status === 'success') {
-    let successMessage = 'Votre paiement a ete traite avec succes.';
+    let successMessage = 'Votre paiement a été traité avec succès.';
     let btnLabel = 'Voir mes commandes';
 
     if (completedMode === 'service_booking_advance') {
-      successMessage = 'Vos frais de deplacement ont ete payes. En attente d\'acceptation du prestataire.';
-      btnLabel = 'Voir ma reservation';
+      successMessage = 'Vos frais de deplacement ont été payes. En attente d\'acceptation du prestataire.';
+      btnLabel = 'Voir ma réservation';
     } else if (completedMode === 'service_booking_balance') {
-      successMessage = 'Le solde de la prestation a ete paye avec succes.';
-      btnLabel = 'Voir ma reservation';
+      successMessage = 'Le solde de la prestation a été payé avec succès.';
+      btnLabel = 'Voir ma réservation';
     } else if (completedMode === 'balance') {
-      successMessage = 'Le solde de votre commande a ete paye avec succes.';
+      successMessage = 'Le solde de votre commande a été payé avec succès.';
     } else if (completedMode === 'checkout') {
-      successMessage = 'Votre acompte a ete paye. Vous paierez le solde a la livraison.';
+      successMessage = 'Votre acompte a été payé. Vous paierez le solde a la livraison.';
     }
 
     return (

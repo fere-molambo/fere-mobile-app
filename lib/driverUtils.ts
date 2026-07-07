@@ -14,8 +14,8 @@ export const DELIVERY_STATUS_CONFIG: Record<DeliveryStatus, StatusConfig> = {
   picked_up: { label: 'Recuperee', color: '#7c3aed', bgColor: '#ede9fe' },
   en_route_client: { label: 'En route', color: '#2563eb', bgColor: '#dbeafe' },
   arrived: { label: 'Arrivee', color: '#059669', bgColor: '#d1fae5' },
-  delivered: { label: 'Livree', color: '#16a34a', bgColor: '#dcfce7' },
-  cancelled: { label: 'Annulee', color: '#ef4444', bgColor: '#fee2e2' },
+  delivered: { label: 'Livrée', color: '#16a34a', bgColor: '#dcfce7' },
+  cancelled: { label: 'Annulée', color: '#ef4444', bgColor: '#fee2e2' },
 };
 
 export const RETURN_STATUS_CONFIG: Record<ReturnStatus, StatusConfig> = {

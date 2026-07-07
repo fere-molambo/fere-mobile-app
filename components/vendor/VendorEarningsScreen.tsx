@@ -237,7 +237,7 @@ export default function VendorEarningsScreen({ userId, userRole }: Props) {
             </View>
             <View style={styles.summarySmallCard}>
               <CheckCircle size={16} color="#16a34a" />
-              <Text style={styles.smallLabel}>Total paye</Text>
+              <Text style={styles.smallLabel}>Total payé</Text>
               <Text style={styles.smallValueGreen}>{formatPrice(totalPaid)} FCFA</Text>
             </View>
           </View>

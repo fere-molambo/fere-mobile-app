@@ -47,7 +47,7 @@ export default function ShopCreationForm({ userId, onCreated }: Props) {
       return;
     }
     if (name.trim().length < 3) {
-      setError('Le nom doit contenir au moins 3 caracteres');
+      setError('Le nom doit contenir au moins 3 caractères');
       return;
     }
 
@@ -77,7 +77,7 @@ export default function ShopCreationForm({ userId, onCreated }: Props) {
             body: {
               type: 'new_shop_created',
               title: 'Nouvelle boutique creee',
-              body: `Une nouvelle boutique "${data.name}" a ete creee et est en attente de validation.`,
+              body: `Une nouvelle boutique "${data.name}" a été creee et est en attente de validation.`,
               target_roles: ['admin', 'super_admin'],
               data: { shop_id: data.id },
             },
@@ -90,9 +90,9 @@ export default function ShopCreationForm({ userId, onCreated }: Props) {
       onCreated();
     } catch (err: any) {
       if (err?.message?.includes('duplicate')) {
-        setError('Une boutique avec ce nom existe deja');
+        setError('Une boutique avec ce nom existe déjà');
       } else {
-        setError(err?.message || 'Erreur lors de la creation');
+        setError(err?.message || 'Erreur lors de la création');
       }
     } finally {
       setSaving(false);
@@ -144,7 +144,7 @@ export default function ShopCreationForm({ userId, onCreated }: Props) {
             style={[styles.input, styles.textArea]}
             value={description}
             onChangeText={setDescription}
-            placeholder="Decrivez votre activite en quelques mots"
+            placeholder="Décrivez votre activite en quelques mots"
             placeholderTextColor="#9ca3af"
             multiline
             numberOfLines={3}
@@ -179,7 +179,7 @@ export default function ShopCreationForm({ userId, onCreated }: Props) {
         <View style={styles.field}>
           <View style={styles.labelRow}>
             <Phone size={14} color="#374151" />
-            <Text style={styles.label}>Telephone de contact</Text>
+            <Text style={styles.label}>Téléphone de contact</Text>
           </View>
           <TextInput
             style={styles.input}
