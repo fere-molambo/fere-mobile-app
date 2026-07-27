@@ -13,6 +13,7 @@ import PaymentStatusBadge from '@/components/PaymentStatusBadge';
 import { formatBookingDate, formatBookingTime, formatPrice } from '@/lib/bookingUtils';
 import { startConversation } from '@/lib/chatUtils';
 import { startTracking } from '@/lib/trackingService';
+import TrackingMap from '@/components/tracking/TrackingMap';
 import { supabase } from '@/lib/supabase';
 import type { BookingStatus, BookingPaymentStatus } from '@/types/database';
 
@@ -158,6 +159,18 @@ export default function VendorBookingDetailSheet({ booking, onClose, onAction, v
                     <Navigation size={14} color="#2563eb" />
                     <Text style={styles.mapsBtnText}>Google Maps</Text>
                   </TouchableOpacity>
+                )}
+                {!isTerminal && addr.geolocation_lat != null && addr.geolocation_lng != null && (
+                  <View style={{ marginTop: 10 }}>
+                    <TrackingMap
+                      referenceId={booking.id}
+                      referenceType="booking"
+                      destinationLat={addr.geolocation_lat}
+                      destinationLng={addr.geolocation_lng}
+                      trackerLabel="Ma position"
+                      height={220}
+                    />
+                  </View>
                 )}
               </View>
             )}

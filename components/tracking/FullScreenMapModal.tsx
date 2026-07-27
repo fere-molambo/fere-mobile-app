@@ -1,6 +1,7 @@
 import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, Platform } from 'react-native';
 import { X, Navigation, MapPin, Gauge } from 'lucide-react-native';
+import LeafletMap from '@/components/tracking/LeafletMap';
 
 interface Position {
   lat: number;
@@ -12,7 +13,7 @@ interface Position {
 interface Props {
   visible: boolean;
   onClose: () => void;
-  position: Position;
+  position: Position | null;
   destination?: { lat: number; lng: number } | null;
   trackerLabel?: string;
 }
@@ -29,10 +30,10 @@ function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
 }
 
 export default function FullScreenMapModal({ visible, onClose, position, destination, trackerLabel }: Props) {
-  const dist = destination ? calculateDistance(position.lat, position.lng, destination.lat, destination.lng) : null;
+  const dist = position && destination ? calculateDistance(position.lat, position.lng, destination.lat, destination.lng) : null;
   const distText = dist !== null ? (dist < 1 ? `${Math.round(dist * 1000)} m` : `${dist.toFixed(1)} km`) : null;
-  const etaMinutes = dist !== null && position.speed && position.speed > 1 ? Math.ceil((dist * 1000) / (position.speed * 60)) : null;
-  const speedKmh = position.speed && position.speed > 0 ? Math.round(position.speed * 3.6) : null;
+  const etaMinutes = dist !== null && position?.speed && position.speed > 1 ? Math.ceil((dist * 1000) / (position.speed * 60)) : null;
+  const speedKmh = position?.speed && position.speed > 0 ? Math.round(position.speed * 3.6) : null;
 
   return (
     <Modal visible={visible} animationType="slide" presentationStyle="fullScreen">
@@ -45,27 +46,13 @@ export default function FullScreenMapModal({ visible, onClose, position, destina
         </View>
 
         <View style={styles.mapArea}>
-          <View style={styles.mapContent}>
-            <View style={styles.markerDot}>
-              <Navigation
-                size={22}
-                color="#fff"
-                style={position.heading ? { transform: [{ rotate: `${position.heading}deg` }] } : undefined}
-              />
+          <LeafletMap position={position} destination={destination} />
+          {position && (
+            <View style={styles.liveIndicator}>
+              <View style={styles.liveDot} />
+              <Text style={styles.liveText}>EN DIRECT</Text>
             </View>
-            {destination && (
-              <View style={styles.destMarker}>
-                <MapPin size={16} color="#fff" />
-              </View>
-            )}
-          </View>
-          <View style={styles.coordsOverlay}>
-            <Text style={styles.coordsText}>{position.lat.toFixed(5)}, {position.lng.toFixed(5)}</Text>
-          </View>
-          <View style={styles.liveIndicator}>
-            <View style={styles.liveDot} />
-            <Text style={styles.liveText}>EN DIRECT</Text>
-          </View>
+          )}
         </View>
 
         <View style={styles.statsBar}>
@@ -121,8 +108,6 @@ const styles = StyleSheet.create({
   mapArea: {
     flex: 1,
     backgroundColor: '#e8ede8',
-    justifyContent: 'center',
-    alignItems: 'center',
     position: 'relative',
   },
   mapContent: {

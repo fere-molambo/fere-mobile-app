@@ -11,7 +11,7 @@ import {
   Platform,
 } from 'react-native';
 import { useLocalSearchParams, useRouter, useFocusEffect } from 'expo-router';
-import { X, Clock, CircleCheck as CheckCircle, Truck, MapPin, Package, Circle as XCircle, ChevronLeft, Send, ShieldCheck, Paperclip, Info, MessageCircle } from 'lucide-react-native';
+import { X, Clock, CircleCheck as CheckCircle, Truck, MapPin, Package, Circle as XCircle, ChevronLeft, Send, ShieldCheck, Paperclip, Info, MessageCircle, Printer } from 'lucide-react-native';
 import Constants from 'expo-constants';
 import { supabase, invokeWithAuth } from '@/lib/supabase';
 import { useAuth } from '@/contexts/AuthContext';
@@ -34,6 +34,7 @@ import {
 } from '@/components/order/OrderDetailConstants';
 import { styles } from '@/components/order/OrderDetailStyles';
 import TrackingMap from '@/components/tracking/TrackingMap';
+import { printReceipt } from '@/lib/receiptUtils';
 
 export default function OrderDetailScreen() {
   const { id } = useLocalSearchParams();
@@ -440,6 +441,27 @@ export default function OrderDetailScreen() {
   }
 
   const orderStatusConfig = ORDER_STATUS_CONFIG[order.status] || ORDER_STATUS_CONFIG.pending;
+  const handlePrintReceipt = () => {
+    if (!order) return;
+    printReceipt({
+      orderNumber: order.order_number,
+      date: formatDate(order.created_at),
+      shopName: (order.shop as any)?.name || 'FERE',
+      shopAddress: (order.shop as any)?.address,
+      shopPhone: (order.shop as any)?.contact_phone,
+      items: (order.order_items || []).map((it: any) => ({
+        name: it.product?.name || 'Article',
+        quantity: it.quantity,
+        unit_price: it.unit_price,
+        total_price: it.total_price,
+      })),
+      subtotal: order.subtotal,
+      deliveryFee: order.delivery_fee || 0,
+      total: order.total_amount,
+      paymentStatus: order.payment_status,
+    });
+  };
+
   const paymentStatusConfig = PAYMENT_STATUS_CONFIG[order.payment_status] || PAYMENT_STATUS_CONFIG.pending;
   const currentOrderStep = getOrderStepIndex(order.status);
   const deliveryStepIndex = delivery ? getDeliveryStepIndex(delivery.status) : -1;
@@ -769,6 +791,20 @@ export default function OrderDetailScreen() {
             Commandé le {formatDate(order.created_at)}
           </Text>
         </View>
+
+        {(order.payment_status === 'paid' || (order.advance_paid || 0) > 0 || order.status === 'delivered') && (
+          <TouchableOpacity
+            onPress={handlePrintReceipt}
+            style={{
+              flexDirection: 'row', alignItems: 'center', justifyContent: 'center', gap: 8,
+              marginHorizontal: 16, marginTop: 4, paddingVertical: 14,
+              borderRadius: 12, borderWidth: 1.5, borderColor: '#003f2f', backgroundColor: '#fff',
+            }}
+          >
+            <Printer size={18} color="#003f2f" />
+            <Text style={{ color: '#003f2f', fontSize: 15, fontWeight: '700' }}>Imprimer le reçu</Text>
+          </TouchableOpacity>
+        )}
 
         <View style={{ height: 40 }} />
       </ScrollView>

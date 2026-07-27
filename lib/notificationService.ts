@@ -18,7 +18,23 @@ export async function registerPushToken(userId: string): Promise<void> {
     }
     if (finalStatus !== 'granted') return;
 
-    const tokenData = await Notifications.getExpoPushTokenAsync();
+    // Canal Android obligatoire pour le son + l'affichage des notifications
+    if (Platform.OS === 'android') {
+      await Notifications.setNotificationChannelAsync('default', {
+        name: 'Notifications FERE',
+        importance: Notifications.AndroidImportance.MAX,
+        sound: 'default',
+        vibrationPattern: [0, 250, 250, 250],
+        lightColor: '#003f2f',
+      });
+    }
+
+    const Constants = require('expo-constants').default;
+    const projectId =
+      Constants?.expoConfig?.extra?.eas?.projectId ?? Constants?.easConfig?.projectId;
+    const tokenData = await Notifications.getExpoPushTokenAsync(
+      projectId ? { projectId } : undefined
+    );
     const token = tokenData.data;
 
     await supabase
@@ -50,14 +66,19 @@ export async function sendNotificationToUser(
   data?: Record<string, any>
 ): Promise<void> {
   const url = `${process.env.EXPO_PUBLIC_SUPABASE_URL}/functions/v1/send-notification`;
+  // L'edge function exige le token de session (auth.getUser) et un tableau user_ids
+  const { data: sessionData } = await supabase.auth.getSession();
+  const accessToken = sessionData?.session?.access_token;
+  if (!accessToken) return;
   await fetch(url, {
     method: 'POST',
     headers: {
       'Content-Type': 'application/json',
-      'Authorization': `Bearer ${process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY}`,
+      'apikey': process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY || '',
+      'Authorization': `Bearer ${accessToken}`,
     },
     body: JSON.stringify({
-      user_id: targetUserId,
+      user_ids: [targetUserId],
       title,
       body,
       data: data || {},

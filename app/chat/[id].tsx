@@ -36,6 +36,8 @@ import { useChat } from '@/contexts/ChatContext';
 import * as ImagePicker from 'expo-image-picker';
 import { Audio } from 'expo-av';
 import AudioPlayer from '@/components/chat/AudioPlayer';
+import { uriToBytes } from '@/lib/uploadUtils';
+import { sendNotificationToUser } from '@/lib/notificationService';
 import ImageViewer from '@/components/chat/ImageViewer';
 import ImagePreviewModal from '@/components/chat/ImagePreviewModal';
 
@@ -193,6 +195,14 @@ export default function ConversationDetailScreen() {
     };
   }, [id]);
 
+  const notifyPeer = (preview: string) => {
+    if (!participant?.id || !id) return;
+    sendNotificationToUser(participant.id, 'Nouveau message', preview.slice(0, 120), {
+      type: 'new_message',
+      conversation_id: id,
+    }).catch(() => {});
+  };
+
   const handleSend = async () => {
     if (!inputText.trim() || !id || !userId || sending) return;
     const text = inputText.trim();
@@ -210,6 +220,7 @@ export default function ConversationDetailScreen() {
         .from('conversations')
         .update({ last_message_at: new Date().toISOString() })
         .eq('id', id);
+      notifyPeer(text);
     } catch {
       setInputText(text);
     } finally {
@@ -239,9 +250,11 @@ export default function ConversationDetailScreen() {
     try {
       const ext = selectedImage.split('.').pop()?.toLowerCase() || 'jpg';
       const fileName = `${userId}/${id}/${Date.now()}.${ext}`;
-      const response = await fetch(selectedImage);
-      const blob = await response.blob();
-      const arrayBuffer = await blob.arrayBuffer();
+      // Blob.arrayBuffer() n'existe pas en React Native
+      const arrayBuffer =
+        Platform.OS === 'web'
+          ? await (await (await fetch(selectedImage)).blob()).arrayBuffer()
+          : await uriToBytes(selectedImage);
 
       const { error: uploadError } = await supabase.storage
         .from('chat-media')
@@ -268,6 +281,7 @@ export default function ConversationDetailScreen() {
         .from('conversations')
         .update({ last_message_at: new Date().toISOString() })
         .eq('id', id);
+      notifyPeer(caption || '📷 Photo');
     } finally {
       setSelectedImage(null);
       setShowImagePreview(false);
@@ -326,9 +340,9 @@ export default function ConversationDetailScreen() {
       await recording.stopAndUnloadAsync();
       const uri = recording.getURI();
       if (uri) {
-        const response = await fetch(uri);
-        const blob = await response.blob();
-        await uploadAudio(blob, 'm4a');
+        // Blob.arrayBuffer() n'existe pas en React Native : lecture directe du fichier
+        const bytes = await uriToBytes(uri);
+        await uploadAudioBody(bytes, 'm4a');
       }
     } finally {
       recordingRef.current = null;
@@ -337,10 +351,15 @@ export default function ConversationDetailScreen() {
   };
 
   const uploadAudio = async (blob: Blob, ext: string) => {
+    // Web uniquement : Blob.arrayBuffer() y est disponible
+    const arrayBuffer = await blob.arrayBuffer();
+    await uploadAudioBody(arrayBuffer, ext);
+  };
+
+  const uploadAudioBody = async (arrayBuffer: ArrayBuffer | Uint8Array, ext: string) => {
     if (!id || !userId) return;
     try {
       const fileName = `${userId}/${id}/${Date.now()}.${ext}`;
-      const arrayBuffer = await blob.arrayBuffer();
 
       const { error: uploadError } = await supabase.storage
         .from('chat-media')
@@ -367,6 +386,7 @@ export default function ConversationDetailScreen() {
         .from('conversations')
         .update({ last_message_at: new Date().toISOString() })
         .eq('id', id);
+      notifyPeer('🎤 Note vocale');
     } catch (err) {
       console.error('Audio upload error:', err);
     }

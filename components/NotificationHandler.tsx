@@ -43,6 +43,7 @@ export default function NotificationHandler() {
     if (Platform.OS === 'web') return;
 
     let sub: any;
+    let respSub: any;
     try {
       const Notifications = require('expo-notifications');
 
@@ -64,12 +65,23 @@ export default function NotificationHandler() {
           data: content.data || {},
         });
       });
+
+      // Tap sur une notification système (app en arrière-plan) → navigation
+      respSub = Notifications.addNotificationResponseReceivedListener((response: any) => {
+        const data = response?.notification?.request?.content?.data;
+        if (!data?.type) return;
+        const routeFn = NOTIFICATION_ROUTES[data.type as NotificationType];
+        if (routeFn) {
+          router.push(routeFn(data) as any);
+        }
+      });
     } catch {}
 
     return () => {
       if (sub) sub.remove();
+      if (respSub) respSub.remove();
     };
-  }, [showToast]);
+  }, [showToast, router]);
 
   const handleTap = useCallback(() => {
     if (!toast?.data?.type) return;
