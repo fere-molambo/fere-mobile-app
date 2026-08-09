@@ -27,6 +27,8 @@ export function useTrackingSession(referenceId: string): UseTrackingSessionResul
         .select('id, current_lat, current_lng, heading, speed, is_active')
         .eq('reference_id', referenceId)
         .eq('is_active', true)
+        .order('updated_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
       if (data && data.current_lat && data.current_lng) {
@@ -47,13 +49,16 @@ export function useTrackingSession(referenceId: string): UseTrackingSessionResul
       .on(
         'postgres_changes',
         {
-          event: 'UPDATE',
+          // '*' et pas 'UPDATE' : sinon la création de session par le livreur
+          // n'est jamais captée si le client a ouvert l'écran avant lui.
+          event: '*',
           schema: 'public',
           table: 'live_tracking_sessions',
           filter: `reference_id=eq.${referenceId}`,
         },
         (payload: any) => {
           const row = payload.new;
+          if (!row) return;
           if (row.is_active && row.current_lat && row.current_lng) {
             setPosition({
               lat: row.current_lat,

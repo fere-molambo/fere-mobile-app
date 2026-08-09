@@ -2,6 +2,7 @@ import React, { useState, useEffect, useRef, useCallback } from 'react';
 import { View, TouchableOpacity, Text, StyleSheet, Platform } from 'react-native';
 import { Play, Pause } from 'lucide-react-native';
 import { Audio } from 'expo-av';
+import { supabase } from '@/lib/supabase';
 
 interface AudioPlayerProps {
   uri: string;
@@ -31,6 +32,7 @@ export default function AudioPlayer({ uri, messageId, isOwnMessage }: AudioPlaye
   const [durationMs, setDurationMs] = useState(0);
   const [positionMs, setPositionMs] = useState(0);
   const soundRef = useRef<Audio.Sound | null>(null);
+  const listenReportedRef = useRef(false);
   const waveformHeights = generateWaveformHeights(messageId);
 
   const progress = durationMs > 0 ? positionMs / durationMs : 0;
@@ -44,8 +46,17 @@ export default function AudioPlayer({ uri, messageId, isOwnMessage }: AudioPlaye
     };
   }, []);
 
+  // Premiere ecoute par le destinataire : demarre le compte a rebours de 72h
+  // avant purge du fichier audio (la RPC ignore l'expediteur).
+  const reportListened = useCallback(() => {
+    if (isOwnMessage || listenReportedRef.current) return;
+    listenReportedRef.current = true;
+    supabase.rpc('mark_voice_note_listened', { p_message_id: messageId }).then(() => {});
+  }, [isOwnMessage, messageId]);
+
   const loadAndPlay = useCallback(async () => {
     try {
+      reportListened();
       if (Platform.OS !== 'web') {
         await Audio.setAudioModeAsync({ playsInSilentModeIOS: true });
       }
@@ -75,7 +86,7 @@ export default function AudioPlayer({ uri, messageId, isOwnMessage }: AudioPlaye
     } catch (err) {
       console.error('Audio playback error:', err);
     }
-  }, [uri]);
+  }, [uri, reportListened]);
 
   const togglePlay = useCallback(async () => {
     if (isPlaying && soundRef.current) {

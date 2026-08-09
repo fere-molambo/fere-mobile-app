@@ -32,7 +32,9 @@ export default function ActiveDeliveryCard({ delivery, userId, onUpdate }: Activ
   const trackingCleanupRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
-    const shouldTrack = ['in_progress', 'picked_up', 'en_route_client'].includes(delivery.status);
+    // 'arrived' inclus : sinon la carte du client s'éteint pile au moment où
+    // il reçoit « le livreur est arrivé ».
+    const shouldTrack = ['in_progress', 'picked_up', 'en_route_client', 'arrived'].includes(delivery.status);
     if (shouldTrack) {
       startTracking(userId, delivery.id, 'delivery', 'driver').then((result) => {
         if (result) trackingCleanupRef.current = result.cleanup;

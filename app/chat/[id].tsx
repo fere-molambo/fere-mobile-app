@@ -466,6 +466,16 @@ export default function ConversationDetailScreen() {
             <AudioPlayer uri={item.media_url} messageId={item.id} isOwnMessage={isMine} />
           )}
 
+          {/* media_url vidé par la purge automatique 72h après l'écoute */}
+          {item.media_type === 'audio' && !item.media_url && (
+            <View style={styles.expiredAudioRow}>
+              <Clock size={14} color={isMine ? 'rgba(255,255,255,0.7)' : '#999'} />
+              <Text style={[styles.expiredAudioText, isMine ? styles.myText : styles.theirText]}>
+                Note vocale expirée
+              </Text>
+            </View>
+          )}
+
           {item.content ? (
             <Text style={[styles.messageText, isMine ? styles.myText : styles.theirText]}>
               {item.content}
@@ -781,6 +791,18 @@ const styles = StyleSheet.create({
     height: 180,
     borderRadius: 10,
     marginBottom: 4,
+  },
+  expiredAudioRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    minWidth: 160,
+    paddingVertical: 2,
+  },
+  expiredAudioText: {
+    fontSize: 13,
+    fontStyle: 'italic',
+    opacity: 0.75,
   },
   messageText: {
     fontSize: 15,
