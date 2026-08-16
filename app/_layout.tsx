@@ -13,6 +13,7 @@ import { ChatProvider } from '@/contexts/ChatContext';
 import { AuthFlowProvider } from '@/contexts/AuthFlowContext';
 import CartModal from '@/components/CartModal';
 import NotificationHandler from '@/components/NotificationHandler';
+import ConsentGate from '@/components/legal/ConsentGate';
 
 SplashScreen.preventAutoHideAsync();
 
@@ -56,6 +57,7 @@ function RootLayoutInner() {
       </Stack>
       <CartModal />
       <NotificationHandler />
+      <ConsentGate />
       <StatusBar style="auto" />
     </>
   );

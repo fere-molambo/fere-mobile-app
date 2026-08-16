@@ -97,6 +97,7 @@ export async function register(
   pin: string,
   role: string,
   email?: string,
+  consents?: Record<string, unknown>,
 ) {
   return request({
     action: 'register',
@@ -105,6 +106,9 @@ export async function register(
     pin,
     role,
     email: email || '',
+    // Consentement CGU / confidentialite recueilli avant la creation du compte :
+    // il est archive avec l'inscription en attente puis horodate a la validation.
+    consents: consents ?? null,
   });
 }
 

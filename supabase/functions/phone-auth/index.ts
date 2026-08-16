@@ -256,6 +256,10 @@ async function handleRegister(
     otp_code: otp,
     otp_expires_at: otpExpires,
     otp_attempts: 0,
+    // Consentement CGU / confidentialite coche a l'ecran d'inscription.
+    // Null si l'app est une version anterieure : la barriere de consentement
+    // au demarrage prendra alors le relais a la premiere connexion.
+    consents: (body.consents as Record<string, unknown> | null) ?? null,
   });
 
   const country = extractCountryInfo(phone);
@@ -344,6 +348,43 @@ async function handleVerifyRegistration(
     pin_hash: pending.pin_hash,
     internal_password: internalPassword,
   });
+
+  // Trace du consentement CGU / confidentialite (exigence APDP). Un echec
+  // d'archivage ne doit pas faire echouer la creation du compte : la barriere
+  // de consentement au demarrage redemandera l'acceptation.
+  const consents = pending.consents as Record<string, unknown> | null;
+  if (consents?.cgu === true && consents?.privacy === true) {
+    try {
+      const { data: settings } = await supabase
+        .from("platform_settings")
+        .select("cgu_version, privacy_version")
+        .limit(1)
+        .maybeSingle();
+
+      const source = consents.source === "web" ? "web" : "mobile";
+      const appVersion = (consents.app_version as string | null) ?? null;
+
+      const { error: consentError } = await supabase.from("user_consents").insert([
+        {
+          user_id: userId,
+          document: "cgu",
+          version: settings?.cgu_version ?? "1.0",
+          source,
+          app_version: appVersion,
+        },
+        {
+          user_id: userId,
+          document: "privacy",
+          version: settings?.privacy_version ?? "1.0",
+          source,
+          app_version: appVersion,
+        },
+      ]);
+      if (consentError) console.error("user_consents:", consentError.message);
+    } catch (err) {
+      console.error("user_consents:", err);
+    }
+  }
 
   await supabase
     .from("pending_registrations")

@@ -8,6 +8,9 @@ import PinInput from '@/components/PinInput';
 import * as phoneAuth from '@/lib/phoneAuth';
 import type { PhoneAuthError } from '@/lib/phoneAuth';
 import { useAuthFlow } from '@/contexts/AuthFlowContext';
+import ConsentCheckbox from '@/components/legal/ConsentCheckbox';
+import LegalTextModal from '@/components/legal/LegalTextModal';
+import { buildSignupConsents, type LegalDocument } from '@/lib/consentService';
 
 export default function RegisterScreen() {
   const [activeTab, setActiveTab] = useState<'connexion' | 'inscription'>('inscription');
@@ -22,6 +25,11 @@ export default function RegisterScreen() {
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [pinError, setPinError] = useState<string | null>(null);
+  const [cguAccepted, setCguAccepted] = useState(false);
+  const [privacyAccepted, setPrivacyAccepted] = useState(false);
+  const [openDoc, setOpenDoc] = useState<LegalDocument | null>(null);
+
+  const consentsGiven = cguAccepted && privacyAccepted;
 
   const router = useRouter();
   const { setFlowData } = useAuthFlow();
@@ -51,11 +59,23 @@ export default function RegisterScreen() {
       return;
     }
 
+    if (!consentsGiven) {
+      setError("Vous devez accepter les CGU et la politique de confidentialité");
+      return;
+    }
+
     const fullPhone = `${countryCode}${phoneNumber}`;
 
     setLoading(true);
     try {
-      await phoneAuth.register(fullPhone, nomComplet, pin, selectedRole, email || undefined);
+      await phoneAuth.register(
+        fullPhone,
+        nomComplet,
+        pin,
+        selectedRole,
+        email || undefined,
+        buildSignupConsents(),
+      );
       setFlowData({
         phone: fullPhone,
         full_name: nomComplet,
@@ -195,10 +215,29 @@ export default function RegisterScreen() {
             />
           </View>
 
+          <View style={styles.consentSection}>
+            <ConsentCheckbox
+              checked={cguAccepted}
+              onToggle={() => { setCguAccepted((v) => !v); setError(null); }}
+              prefix="J'ai lu et j'accepte les "
+              linkLabel="conditions générales d'utilisation"
+              onPressLink={() => setOpenDoc('cgu')}
+              disabled={loading}
+            />
+            <ConsentCheckbox
+              checked={privacyAccepted}
+              onToggle={() => { setPrivacyAccepted((v) => !v); setError(null); }}
+              prefix="J'ai lu et j'accepte la "
+              linkLabel="politique de confidentialité"
+              onPressLink={() => setOpenDoc('privacy')}
+              disabled={loading}
+            />
+          </View>
+
           <TouchableOpacity
-            style={[styles.registerButton, loading && styles.registerButtonDisabled]}
+            style={[styles.registerButton, (loading || !consentsGiven) && styles.registerButtonDisabled]}
             onPress={handleRegister}
-            disabled={loading}
+            disabled={loading || !consentsGiven}
           >
             <Text style={styles.registerButtonText}>
               {loading ? 'Inscription...' : 'S\'inscrire'}
@@ -206,6 +245,12 @@ export default function RegisterScreen() {
           </TouchableOpacity>
         </View>
       </ScrollView>
+
+      <LegalTextModal
+        visible={openDoc !== null}
+        document={openDoc ?? 'cgu'}
+        onClose={() => setOpenDoc(null)}
+      />
     </KeyboardAvoidingView>
   );
 }
@@ -343,6 +388,10 @@ const styles = StyleSheet.create({
   },
   confirmPinSection: {
     marginTop: 20,
+  },
+  consentSection: {
+    marginTop: 24,
+    marginBottom: 4,
   },
   registerButton: {
     backgroundColor: '#003f2f',

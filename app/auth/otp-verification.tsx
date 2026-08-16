@@ -5,6 +5,7 @@ import PinInput from '@/components/PinInput';
 import * as phoneAuth from '@/lib/phoneAuth';
 import type { PhoneAuthError } from '@/lib/phoneAuth';
 import { useAuthFlow } from '@/contexts/AuthFlowContext';
+import { buildSignupConsents } from '@/lib/consentService';
 
 const RESEND_COOLDOWN = 60;
 
@@ -76,6 +77,9 @@ export default function OtpVerificationScreen() {
         flowData.pin,
         flowData.role,
         flowData.email || undefined,
+        // Le renvoi recree l'inscription en attente : sans cela le consentement
+        // deja donne a l'ecran precedent serait perdu.
+        buildSignupConsents(),
       );
       setResendCooldown(RESEND_COOLDOWN);
       timerRef.current = setInterval(() => {
