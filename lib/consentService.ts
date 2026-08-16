@@ -2,7 +2,11 @@ import { Platform } from 'react-native';
 import Constants from 'expo-constants';
 import { supabase } from '@/lib/supabase';
 
+/** Documents soumis a consentement. */
 export type LegalDocument = 'cgu' | 'privacy';
+
+/** Documents consultables : le reglement cookies s'affiche mais ne se signe pas. */
+export type LegalDocKey = LegalDocument | 'cookies';
 
 export interface ConsentState {
   cgu_version: string;
@@ -14,6 +18,7 @@ export interface ConsentState {
 export interface LegalTexts {
   cgu: string;
   privacy: string;
+  cookies: string;
 }
 
 export const CONSENT_SOURCE = Platform.OS === 'web' ? 'web' : 'mobile';
@@ -58,7 +63,7 @@ export async function acceptConsents(): Promise<boolean> {
 export async function fetchLegalTexts(): Promise<LegalTexts> {
   const { data, error } = await supabase
     .from('platform_settings')
-    .select('cgu, privacy_policy')
+    .select('cgu, privacy_policy, cookies')
     .limit(1)
     .maybeSingle();
 
@@ -69,6 +74,7 @@ export async function fetchLegalTexts(): Promise<LegalTexts> {
   return {
     cgu: data?.cgu || '',
     privacy: data?.privacy_policy || '',
+    cookies: data?.cookies || '',
   };
 }
 

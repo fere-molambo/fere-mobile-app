@@ -10,17 +10,18 @@ import {
 } from 'react-native';
 import { X } from 'lucide-react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
-import { fetchLegalTexts, type LegalDocument } from '@/lib/consentService';
+import { fetchLegalTexts, type LegalDocKey } from '@/lib/consentService';
 
 interface LegalTextModalProps {
   visible: boolean;
-  document: LegalDocument;
+  document: LegalDocKey;
   onClose: () => void;
 }
 
-const TITLES: Record<LegalDocument, string> = {
+const TITLES: Record<LegalDocKey, string> = {
   cgu: "Conditions générales d'utilisation",
   privacy: 'Politique de confidentialité',
+  cookies: 'Politique de cookies',
 };
 
 /**
@@ -96,7 +97,7 @@ export default function LegalTextModal({ visible, document, onClose }: LegalText
     fetchLegalTexts()
       .then((texts) => {
         if (cancelled) return;
-        setContent(document === 'cgu' ? texts.cgu : texts.privacy);
+        setContent(texts[document]);
       })
       .finally(() => {
         if (!cancelled) setLoading(false);
