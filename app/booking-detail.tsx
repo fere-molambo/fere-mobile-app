@@ -48,7 +48,7 @@ function getStepIndex(status: BookingStatus): number {
 export default function BookingDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const { user, userRole } = useAuth();
+  const { user } = useAuth();
 
   const [booking, setBooking] = useState<ServiceBooking | null>(null);
   const [vendorProfile, setVendorProfile] = useState<any>(null);
@@ -106,7 +106,41 @@ export default function BookingDetailScreen() {
     return () => { supabase.removeChannel(channel); };
   }, [id, loadBooking]);
 
-  const isVendor = !!user && !!vendorProfile && (user.id === vendorProfile.id || userRole === 'vendeur' || userRole === 'equipe');
+  const [isShopTeamMember, setIsShopTeamMember] = useState(false);
+
+  // Meme regle que sur les commandes : le role vient de la reservation, pas du
+  // profil. Un vendeur qui reserve une prestation reste le client de SA
+  // reservation et doit voir « Contacter le prestataire ».
+  const bookingCustomerId = (booking as any)?.customer_id as string | undefined;
+  const bookingShopId = (booking as any)?.service?.shop?.id as string | undefined;
+
+  const isCustomer = !!user && !!bookingCustomerId && user.id === bookingCustomerId;
+  const isVendor =
+    !isCustomer && !!user && ((!!vendorProfile && user.id === vendorProfile.id) || isShopTeamMember);
+
+  // Un membre d'equipe doit etre rattache a la boutique de CETTE prestation.
+  useEffect(() => {
+    if (!user || !bookingShopId || isCustomer || (vendorProfile && user.id === vendorProfile.id)) {
+      setIsShopTeamMember(false);
+      return;
+    }
+
+    let cancelled = false;
+    supabase
+      .from('shop_team_members')
+      .select('id')
+      .eq('shop_id', bookingShopId)
+      .eq('member_id', user.id)
+      .eq('is_active', true)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled) setIsShopTeamMember(!!data);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user, bookingShopId, isCustomer, vendorProfile]);
 
   const handleContact = async () => {
     if (!user || !vendorProfile) return;
@@ -287,7 +321,8 @@ export default function BookingDetailScreen() {
   const status = booking.status as BookingStatus;
   const currentStepIndex = getStepIndex(status);
   const canCancel = status === 'pending' || status === 'accepted' || status === 'arrived';
-  const isArrivedForPayment = status === 'arrived';
+  // Le paiement du solde est une action du client.
+  const isArrivedForPayment = isCustomer && status === 'arrived';
   const isTerminal = status === 'completed' || status === 'partial' || status === 'cancelled' || status === 'expired';
   const service = booking.service;
   const address = booking.delivery_address;

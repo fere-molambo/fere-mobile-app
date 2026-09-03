@@ -39,7 +39,7 @@ import { printReceipt } from '@/lib/receiptUtils';
 export default function OrderDetailScreen() {
   const { id } = useLocalSearchParams();
   const router = useRouter();
-  const { user, userRole } = useAuth();
+  const { user } = useAuth();
 
   const [order, setOrder] = useState<OrderDetail | null>(null);
   const [delivery, setDelivery] = useState<DeliveryRequest | null>(null);
@@ -56,8 +56,45 @@ export default function OrderDetailScreen() {
   const [contactingVendor, setContactingVendor] = useState(false);
   const [contactingClient, setContactingClient] = useState(false);
 
-  const isDriver = userRole === 'livreur';
-  const isVendor = !isDriver && (userRole === 'vendeur' || userRole === 'equipe' || (!!user && user.id === (order?.shop as any)?.owner_id));
+  const [isShopTeamMember, setIsShopTeamMember] = useState(false);
+
+  // Le role affiche se deduit de la commande, jamais du profil global : un
+  // vendeur qui achete chez un confrere est le client de SA commande, et un
+  // livreur qui n'est pas affecte a cette course n'y a aucun role.
+  const orderClientId = (order as any)?.user_id as string | undefined;
+  const shopOwnerId = (order?.shop as any)?.owner_id as string | undefined;
+
+  const isOrderClient = !!user && !!orderClientId && user.id === orderClientId;
+  const isOrderDriver = !!user && !!delivery?.driver_id && user.id === delivery.driver_id;
+  const isOrderVendor =
+    !isOrderClient && !!user && ((!!shopOwnerId && user.id === shopOwnerId) || isShopTeamMember);
+
+  // Un membre d'equipe ne possede pas la boutique : il faut verifier qu'il est
+  // rattache a CELLE de la commande, sinon il verrait l'interface vendeur sur
+  // les commandes de toutes les autres boutiques.
+  useEffect(() => {
+    const shopId = order?.shop_id;
+    if (!user || !shopId || isOrderClient || (shopOwnerId && user.id === shopOwnerId)) {
+      setIsShopTeamMember(false);
+      return;
+    }
+
+    let cancelled = false;
+    supabase
+      .from('shop_team_members')
+      .select('id')
+      .eq('shop_id', shopId)
+      .eq('member_id', user.id)
+      .eq('is_active', true)
+      .maybeSingle()
+      .then(({ data }) => {
+        if (!cancelled) setIsShopTeamMember(!!data);
+      });
+
+    return () => {
+      cancelled = true;
+    };
+  }, [user, order?.shop_id, shopOwnerId, isOrderClient]);
 
   const handleContactClient = useCallback(async () => {
     if (!user || !(order as any)?.user_id || contactingClient) return;
@@ -230,7 +267,7 @@ export default function OrderDetailScreen() {
 
     const deliveryStatus = delivery?.status ?? null;
     const isBeforePickup = canCancelBeforePickup(order.status, deliveryStatus);
-    const cancellerRole = isDriver ? 'driver' : isVendor ? 'vendor' : 'client';
+    const cancellerRole = isOrderDriver ? 'driver' : isOrderVendor ? 'vendor' : 'client';
     const isDriverArrived = deliveryStatus === 'arrived';
 
     try {
@@ -466,9 +503,11 @@ export default function OrderDetailScreen() {
   const currentOrderStep = getOrderStepIndex(order.status);
   const deliveryStepIndex = delivery ? getDeliveryStepIndex(delivery.status) : -1;
   const deliveryStatus = delivery?.status ?? null;
-  const isArrived = deliveryStatus === 'arrived' && order.status !== 'cancelled' && order.status !== 'delivered' && order.payment_status !== 'paid';
+  // Payer le solde a la livraison est une action du client, pas du vendeur ni du livreur.
+  const isArrived = isOrderClient && deliveryStatus === 'arrived' && order.status !== 'cancelled' && order.status !== 'delivered' && order.payment_status !== 'paid';
   const isArrivedCancel = deliveryStatus === 'arrived' && order.status !== 'cancelled' && order.status !== 'delivered';
   const showCancelButton =
+    (isOrderClient || isOrderVendor || isOrderDriver) &&
     order.status !== 'cancelled' &&
     order.status !== 'delivered' &&
     (canCancelBeforePickup(order.status, deliveryStatus) || isArrivedCancel);
@@ -629,7 +668,7 @@ export default function OrderDetailScreen() {
           <View style={styles.section}>
             <Text style={styles.sectionTitle}>Contact</Text>
             <View style={styles.contactBtnsRow}>
-              {(isDriver || isVendor) && (
+              {(isOrderVendor || isOrderDriver) && (
                 <TouchableOpacity
                   style={styles.contactBtn}
                   onPress={handleContactClient}
@@ -645,7 +684,7 @@ export default function OrderDetailScreen() {
                   )}
                 </TouchableOpacity>
               )}
-              {isDriver && (
+              {(isOrderClient || isOrderDriver) && (
                 <TouchableOpacity
                   style={styles.contactBtn}
                   onPress={handleContactVendor}
@@ -655,7 +694,7 @@ export default function OrderDetailScreen() {
                   <Text style={styles.contactBtnText}>Contacter le vendeur</Text>
                 </TouchableOpacity>
               )}
-              {!isDriver && delivery && delivery.driver_id && !['delivered', 'cancelled'].includes(delivery.status) && (
+              {(isOrderClient || isOrderVendor) && delivery && delivery.driver_id && !['delivered', 'cancelled'].includes(delivery.status) && (
                 <TouchableOpacity
                   style={styles.contactBtn}
                   onPress={handleContactDriver}
