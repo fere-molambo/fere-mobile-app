@@ -1,0 +1,798 @@
+From 860db09efa9df1db5719a4019a0db2c1470b9c57 Mon Sep 17 00:00:00 2001
+From: =?UTF-8?q?Videme=20Auguste=20Th=C3=A9mis=20MONTCHO?=
+ <montchovideme@gmail.com>
+Date: Thu, 3 Sep 2026 13:47:32 +0000
+Subject: [PATCH] =?UTF-8?q?feat(legal):=20consentement=20CGU=20+=20confide?=
+ =?UTF-8?q?ntialit=C3=A9=20(exigence=20APDP)?=
+MIME-Version: 1.0
+Content-Type: text/plain; charset=UTF-8
+Content-Transfer-Encoding: 8bit
+
+Pendant du travail fait côté mobile, même base de données.
+
+- src/lib/consent.ts : état du consentement, acceptation, textes légaux
+- LegalTextDialog : lecture des documents depuis platform_settings
+- ConsentGate : boîte bloquante pour les comptes existants, refuser déconnecte
+- PhoneSignupForm : deux cases distinctes obligatoires (schéma zod)
+- PlatformSettings : versions en vigueur + publication d'une nouvelle version,
+  sans quoi modifier le texte des CGU ne redemandait aucun consentement
+- phone-auth : le consentement transite par pending_registrations et est
+  horodaté à la création du compte
+
+Co-Authored-By: Claude Opus 5 <noreply@anthropic.com>
+---
+ src/App.tsx                                  |   2 +
+ src/components/auth/PhoneSignupForm.tsx      |  74 ++++++++
+ src/components/legal/ConsentGate.tsx         | 170 +++++++++++++++++++
+ src/components/legal/LegalTextDialog.tsx     | 132 ++++++++++++++
+ src/components/settings/PlatformSettings.tsx |  98 +++++++++++
+ src/lib/consent.ts                           |  89 ++++++++++
+ src/lib/validators.ts                        |   7 +
+ supabase/functions/phone-auth/index.ts       |  44 +++++
+ 8 files changed, 616 insertions(+)
+ create mode 100644 src/components/legal/ConsentGate.tsx
+ create mode 100644 src/components/legal/LegalTextDialog.tsx
+ create mode 100644 src/lib/consent.ts
+
+diff --git a/src/App.tsx b/src/App.tsx
+index 8b67047..d8fa186 100644
+--- a/src/App.tsx
++++ b/src/App.tsx
+@@ -5,6 +5,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+ import { BrowserRouter, Routes, Route } from "react-router-dom";
+ import { CartProvider } from "@/contexts/CartContext";
+ import { CartModal } from "@/components/cart/CartModal";
++import ConsentGate from "@/components/legal/ConsentGate";
+ import Home from "./pages/Home";
+ import { CguPage, PrivacyPage, CookiesPage } from "./pages/LegalPage";
+ import Auth from "./pages/Auth";
+@@ -60,6 +61,7 @@ const App = () => (
+         <Sonner />
+         <BrowserRouter>
+           <CartModal />
++          <ConsentGate />
+           <Routes>
+           <Route path="/" element={<Home />} />
+           <Route path="/auth" element={<Auth />} />
+diff --git a/src/components/auth/PhoneSignupForm.tsx b/src/components/auth/PhoneSignupForm.tsx
+index 00c231b..2f9a87b 100644
+--- a/src/components/auth/PhoneSignupForm.tsx
++++ b/src/components/auth/PhoneSignupForm.tsx
+@@ -19,6 +19,9 @@ import OtpVerificationStep from "./OtpVerificationStep";
+ import { supabase } from "@/integrations/supabase/client";
+ import { toast } from "sonner";
+ import { invokeFunction } from "@/lib/parseFunctionError";
++import { Checkbox } from "@/components/ui/checkbox";
++import LegalTextDialog from "@/components/legal/LegalTextDialog";
++import { buildSignupConsents, type LegalDocKey } from "@/lib/consent";
+ 
+ interface PhoneSignupFormProps {
+   onSuccess: () => void;
+@@ -31,6 +34,7 @@ const PhoneSignupForm = ({ onSuccess }: PhoneSignupFormProps) => {
+   const [isVerifying, setIsVerifying] = useState(false);
+   const [devOtp, setDevOtp] = useState<string | null>(null);
+   const [smsSent, setSmsSent] = useState(true);
++  const [openDoc, setOpenDoc] = useState<LegalDocKey | null>(null);
+ 
+   const form = useForm<PhoneSignupFormData>({
+     resolver: zodResolver(phoneSignupSchema),
+@@ -41,6 +45,8 @@ const PhoneSignupForm = ({ onSuccess }: PhoneSignupFormProps) => {
+       role: "membre",
+       pin: "",
+       confirmPin: "",
++      acceptCgu: false,
++      acceptPrivacy: false,
+     },
+   });
+ 
+@@ -53,6 +59,7 @@ const PhoneSignupForm = ({ onSuccess }: PhoneSignupFormProps) => {
+         pin: data.pin,
+         role: data.role,
+         email: data.email || undefined,
++        consents: buildSignupConsents(),
+       });
+ 
+       setRegisteredPhone(data.phone);
+@@ -96,6 +103,9 @@ const PhoneSignupForm = ({ onSuccess }: PhoneSignupFormProps) => {
+         pin: formData.pin,
+         role: formData.role,
+         email: formData.email || undefined,
++        // Le renvoi recree l'inscription en attente : sans cela le consentement
++        // deja donne a l'etape precedente serait perdu.
++        consents: buildSignupConsents(),
+       });
+ 
+       setSmsSent(result?.sms_sent !== false);
+@@ -248,6 +258,68 @@ const PhoneSignupForm = ({ onSuccess }: PhoneSignupFormProps) => {
+           )}
+         />
+ 
++        <div className="space-y-3 rounded-lg border border-border/60 p-3">
++          <FormField
++            control={form.control}
++            name="acceptCgu"
++            render={({ field }) => (
++              <FormItem className="space-y-1">
++                <div className="flex items-start gap-3">
++                  <FormControl>
++                    <Checkbox
++                      checked={field.value}
++                      onCheckedChange={field.onChange}
++                      className="mt-0.5"
++                    />
++                  </FormControl>
++                  <span className="text-sm text-muted-foreground">
++                    J'ai lu et j'accepte les{" "}
++                    <button
++                      type="button"
++                      onClick={() => setOpenDoc("cgu")}
++                      className="font-medium text-primary underline underline-offset-2"
++                    >
++                      conditions générales d'utilisation
++                    </button>
++                    <span className="ml-1 text-destructive">*</span>
++                  </span>
++                </div>
++                <FormMessage />
++              </FormItem>
++            )}
++          />
++
++          <FormField
++            control={form.control}
++            name="acceptPrivacy"
++            render={({ field }) => (
++              <FormItem className="space-y-1">
++                <div className="flex items-start gap-3">
++                  <FormControl>
++                    <Checkbox
++                      checked={field.value}
++                      onCheckedChange={field.onChange}
++                      className="mt-0.5"
++                    />
++                  </FormControl>
++                  <span className="text-sm text-muted-foreground">
++                    J'ai lu et j'accepte la{" "}
++                    <button
++                      type="button"
++                      onClick={() => setOpenDoc("privacy")}
++                      className="font-medium text-primary underline underline-offset-2"
++                    >
++                      politique de confidentialité
++                    </button>
++                    <span className="ml-1 text-destructive">*</span>
++                  </span>
++                </div>
++                <FormMessage />
++              </FormItem>
++            )}
++          />
++        </div>
++
+         <Button
+           type="submit"
+           className="w-full"
+@@ -255,6 +327,8 @@ const PhoneSignupForm = ({ onSuccess }: PhoneSignupFormProps) => {
+         >
+           {form.formState.isSubmitting ? "Inscription..." : "S'inscrire"}
+         </Button>
++
++        <LegalTextDialog document={openDoc} onClose={() => setOpenDoc(null)} />
+       </form>
+     </Form>
+   );
+diff --git a/src/components/legal/ConsentGate.tsx b/src/components/legal/ConsentGate.tsx
+new file mode 100644
+index 0000000..9939812
+--- /dev/null
++++ b/src/components/legal/ConsentGate.tsx
+@@ -0,0 +1,170 @@
++import { useCallback, useEffect, useState } from "react";
++import { Loader2, ShieldCheck } from "lucide-react";
++import { supabase } from "@/integrations/supabase/client";
++import { Button } from "@/components/ui/button";
++import { Checkbox } from "@/components/ui/checkbox";
++import { Dialog, DialogContent, DialogTitle, DialogDescription } from "@/components/ui/dialog";
++import {
++  acceptConsents,
++  fetchConsentState,
++  isConsentComplete,
++  type LegalDocKey,
++} from "@/lib/consent";
++import LegalTextDialog from "./LegalTextDialog";
++
++/**
++ * Barriere de consentement pour les comptes crees avant la mise en place des
++ * CGU, et pour toute nouvelle version des documents. Tant que l'utilisateur
++ * n'a pas accepte, la boite ne peut pas etre fermee : refuser deconnecte.
++ */
++const ConsentGate = () => {
++  const [needsConsent, setNeedsConsent] = useState(false);
++  const [cguChecked, setCguChecked] = useState(false);
++  const [privacyChecked, setPrivacyChecked] = useState(false);
++  const [submitting, setSubmitting] = useState(false);
++  const [error, setError] = useState<string | null>(null);
++  const [openDoc, setOpenDoc] = useState<LegalDocKey | null>(null);
++
++  const check = useCallback(async (userId: string | undefined) => {
++    if (!userId) {
++      setNeedsConsent(false);
++      return;
++    }
++    const state = await fetchConsentState();
++    if (!isConsentComplete(state)) {
++      setCguChecked(false);
++      setPrivacyChecked(false);
++      setNeedsConsent(true);
++    }
++  }, []);
++
++  useEffect(() => {
++    let mounted = true;
++
++    supabase.auth.getSession().then(({ data }) => {
++      if (mounted) check(data.session?.user?.id);
++    });
++
++    const { data: sub } = supabase.auth.onAuthStateChange((event, session) => {
++      if (!mounted) return;
++      if (event === "SIGNED_OUT") {
++        setNeedsConsent(false);
++        return;
++      }
++      if (event === "SIGNED_IN" || event === "INITIAL_SESSION") {
++        check(session?.user?.id);
++      }
++    });
++
++    return () => {
++      mounted = false;
++      sub.subscription.unsubscribe();
++    };
++  }, [check]);
++
++  const handleAccept = async () => {
++    setError(null);
++    setSubmitting(true);
++    const ok = await acceptConsents();
++    setSubmitting(false);
++
++    if (ok) {
++      setNeedsConsent(false);
++    } else {
++      setError("Impossible d'enregistrer votre acceptation. Vérifiez votre connexion.");
++    }
++  };
++
++  const handleRefuse = async () => {
++    setNeedsConsent(false);
++    await supabase.auth.signOut();
++  };
++
++  if (!needsConsent) return null;
++
++  const canAccept = cguChecked && privacyChecked && !submitting;
++
++  return (
++    <>
++      <Dialog open onOpenChange={() => {}}>
++        <DialogContent
++          className="max-w-md [&>button]:hidden"
++          onEscapeKeyDown={(e) => e.preventDefault()}
++          onPointerDownOutside={(e) => e.preventDefault()}
++          onInteractOutside={(e) => e.preventDefault()}
++        >
++          <div className="mb-1 flex h-12 w-12 items-center justify-center rounded-full bg-primary/10">
++            <ShieldCheck className="h-6 w-6 text-primary" />
++          </div>
++
++          <DialogTitle>Mise à jour de nos conditions</DialogTitle>
++          <DialogDescription>
++            Pour continuer à utiliser FERE, vous devez prendre connaissance et accepter nos
++            conditions générales d'utilisation ainsi que notre politique de confidentialité.
++          </DialogDescription>
++
++          <div className="space-y-3 py-2">
++            <label className="flex items-start gap-3 text-sm">
++              <Checkbox
++                checked={cguChecked}
++                onCheckedChange={(v) => setCguChecked(v === true)}
++                disabled={submitting}
++                className="mt-0.5"
++              />
++              <span className="text-muted-foreground">
++                J'ai lu et j'accepte les{" "}
++                <button
++                  type="button"
++                  onClick={() => setOpenDoc("cgu")}
++                  className="font-medium text-primary underline underline-offset-2"
++                >
++                  conditions générales d'utilisation
++                </button>
++                <span className="ml-1 text-destructive">*</span>
++              </span>
++            </label>
++
++            <label className="flex items-start gap-3 text-sm">
++              <Checkbox
++                checked={privacyChecked}
++                onCheckedChange={(v) => setPrivacyChecked(v === true)}
++                disabled={submitting}
++                className="mt-0.5"
++              />
++              <span className="text-muted-foreground">
++                J'ai lu et j'accepte la{" "}
++                <button
++                  type="button"
++                  onClick={() => setOpenDoc("privacy")}
++                  className="font-medium text-primary underline underline-offset-2"
++                >
++                  politique de confidentialité
++                </button>
++                <span className="ml-1 text-destructive">*</span>
++              </span>
++            </label>
++          </div>
++
++          {error && <p className="text-sm text-destructive">{error}</p>}
++
++          <Button onClick={handleAccept} disabled={!canAccept} className="w-full">
++            {submitting ? <Loader2 className="h-4 w-4 animate-spin" /> : "Accepter et continuer"}
++          </Button>
++
++          <button
++            type="button"
++            onClick={handleRefuse}
++            disabled={submitting}
++            className="text-sm text-muted-foreground hover:underline"
++          >
++            Refuser et se déconnecter
++          </button>
++        </DialogContent>
++      </Dialog>
++
++      <LegalTextDialog document={openDoc} onClose={() => setOpenDoc(null)} />
++    </>
++  );
++};
++
++export default ConsentGate;
+diff --git a/src/components/legal/LegalTextDialog.tsx b/src/components/legal/LegalTextDialog.tsx
+new file mode 100644
+index 0000000..9e27831
+--- /dev/null
++++ b/src/components/legal/LegalTextDialog.tsx
+@@ -0,0 +1,132 @@
++import { useEffect, useState } from "react";
++import { Loader2 } from "lucide-react";
++import {
++  Dialog,
++  DialogContent,
++  DialogDescription,
++  DialogHeader,
++  DialogTitle,
++} from "@/components/ui/dialog";
++import { ScrollArea } from "@/components/ui/scroll-area";
++import { fetchLegalTexts, type LegalDocKey } from "@/lib/consent";
++
++interface LegalTextDialogProps {
++  document: LegalDocKey | null;
++  onClose: () => void;
++}
++
++const TITLES: Record<LegalDocKey, string> = {
++  cgu: "Conditions générales d'utilisation",
++  privacy: "Politique de confidentialité",
++  cookies: "Politique de cookies",
++};
++
++/**
++ * Les textes sont stockes en markdown leger dans platform_settings.
++ * On evite une dependance de rendu markdown pour trois marqueurs.
++ */
++function renderMarkdown(source: string) {
++  return source.split("\n").map((rawLine, index) => {
++    const line = rawLine.trimEnd();
++
++    if (!line.trim()) return <div key={index} className="h-2" />;
++
++    if (line.startsWith("### ")) {
++      return (
++        <h4 key={index} className="mt-3 text-sm font-semibold text-foreground">
++          {line.slice(4)}
++        </h4>
++      );
++    }
++    if (line.startsWith("## ")) {
++      return (
++        <h3 key={index} className="mt-5 text-base font-semibold text-foreground">
++          {line.slice(3)}
++        </h3>
++      );
++    }
++    if (line.startsWith("# ")) {
++      return (
++        <h2 key={index} className="mt-2 text-lg font-bold text-foreground">
++          {line.slice(2)}
++        </h2>
++      );
++    }
++
++    const bold = /^\*\*(.+)\*\*$/.exec(line.trim());
++    if (bold) {
++      return (
++        <p key={index} className="text-sm font-medium text-foreground">
++          {bold[1]}
++        </p>
++      );
++    }
++
++    if (line.startsWith("- ") || line.startsWith("* ")) {
++      return (
++        <li key={index} className="ml-4 list-disc text-sm text-muted-foreground">
++          {line.slice(2)}
++        </li>
++      );
++    }
++
++    return (
++      <p key={index} className="text-sm leading-relaxed text-muted-foreground">
++        {line.replace(/\*\*/g, "")}
++      </p>
++    );
++  });
++}
++
++const LegalTextDialog = ({ document, onClose }: LegalTextDialogProps) => {
++  const [content, setContent] = useState<string | null>(null);
++  const [loading, setLoading] = useState(false);
++
++  useEffect(() => {
++    if (!document) return;
++    let cancelled = false;
++
++    setLoading(true);
++    fetchLegalTexts()
++      .then((texts) => {
++        if (cancelled) return;
++        setContent(texts[document]);
++      })
++      .finally(() => {
++        if (!cancelled) setLoading(false);
++      });
++
++    return () => {
++      cancelled = true;
++    };
++  }, [document]);
++
++  return (
++    <Dialog open={document !== null} onOpenChange={(open) => !open && onClose()}>
++      <DialogContent className="max-w-2xl">
++        <DialogHeader>
++          <DialogTitle>{document ? TITLES[document] : ""}</DialogTitle>
++          <DialogDescription className="sr-only">
++            Texte intégral du document légal
++          </DialogDescription>
++        </DialogHeader>
++
++        {loading ? (
++          <div className="flex h-64 items-center justify-center">
++            <Loader2 className="h-5 w-5 animate-spin text-muted-foreground" />
++          </div>
++        ) : content ? (
++          <ScrollArea className="h-[60vh] pr-4">
++            <div className="space-y-1">{renderMarkdown(content)}</div>
++          </ScrollArea>
++        ) : (
++          <p className="py-10 text-center text-sm text-muted-foreground">
++            Ce document n'est pas encore disponible. Contactez-nous à privacy@fere.com.
++          </p>
++        )}
++      </DialogContent>
++    </Dialog>
++  );
++};
++
++export default LegalTextDialog;
+diff --git a/src/components/settings/PlatformSettings.tsx b/src/components/settings/PlatformSettings.tsx
+index d7d6933..662b3aa 100644
+--- a/src/components/settings/PlatformSettings.tsx
++++ b/src/components/settings/PlatformSettings.tsx
+@@ -8,6 +8,17 @@ import { Input } from "@/components/ui/input";
+ import { Label } from "@/components/ui/label";
+ import { Textarea } from "@/components/ui/textarea";
+ import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select";
++import {
++  AlertDialog,
++  AlertDialogAction,
++  AlertDialogCancel,
++  AlertDialogContent,
++  AlertDialogDescription,
++  AlertDialogFooter,
++  AlertDialogHeader,
++  AlertDialogTitle,
++  AlertDialogTrigger,
++} from "@/components/ui/alert-dialog";
+ import { Loader2, Plus, Trash2 } from "lucide-react";
+ 
+ export const PlatformSettings = () => {
+@@ -91,6 +102,23 @@ export const PlatformSettings = () => {
+     await updateSettings.mutateAsync({ [field]: value });
+   };
+ 
++  /**
++   * Publie une nouvelle version d'un document legal (1.4 -> 1.5). Chaque
++   * utilisateur devra re-accepter a sa prochaine ouverture : a ne faire que
++   * pour une modification de fond, pas pour une correction de forme.
++   */
++  const bumpLegalVersion = async (
++    field: "cgu_version" | "privacy_version",
++    label: string,
++  ) => {
++    const current = String((settings as any)?.[field] ?? "1.0");
++    const [major, minor] = current.split(".");
++    const next = `${major || "1"}.${Number(minor ?? 0) + 1}`;
++
++    await updateSettings.mutateAsync({ [field]: next });
++    toast.success(`${label} : version ${next} publiée, le consentement sera redemandé`);
++  };
++
+   if (isLoading) {
+     return <div className="flex justify-center p-8"><Loader2 className="h-8 w-8 animate-spin" /></div>;
+   }
+@@ -371,6 +399,76 @@ export const PlatformSettings = () => {
+               placeholder="Votre politique de cookies..."
+             />
+           </div>
++
++          <div className="space-y-3 rounded-lg border border-border/60 bg-muted/30 p-4">
++            <div>
++              <p className="text-sm font-medium">Versions en vigueur</p>
++              <p className="text-xs text-muted-foreground">
++                CGU {String((settings as any)?.cgu_version ?? "1.0")} · Confidentialité{" "}
++                {String((settings as any)?.privacy_version ?? "1.0")}
++              </p>
++            </div>
++
++            <p className="text-xs text-muted-foreground">
++              Corriger une faute ne demande rien aux utilisateurs. En revanche, si vous
++              modifiez le fond d'un document, publiez une nouvelle version : chacun devra
++              l'accepter à nouveau à sa prochaine ouverture de l'application ou du site.
++            </p>
++
++            <div className="flex flex-wrap gap-2">
++              <AlertDialog>
++                <AlertDialogTrigger asChild>
++                  <Button variant="outline" size="sm">
++                    Publier une nouvelle version des CGU
++                  </Button>
++                </AlertDialogTrigger>
++                <AlertDialogContent>
++                  <AlertDialogHeader>
++                    <AlertDialogTitle>Redemander le consentement aux CGU ?</AlertDialogTitle>
++                    <AlertDialogDescription>
++                      Tous les utilisateurs, mobile et web, devront accepter les nouvelles
++                      CGU avant de pouvoir continuer à utiliser FERE. Cette action ne
++                      s'annule pas.
++                    </AlertDialogDescription>
++                  </AlertDialogHeader>
++                  <AlertDialogFooter>
++                    <AlertDialogCancel>Annuler</AlertDialogCancel>
++                    <AlertDialogAction onClick={() => bumpLegalVersion("cgu_version", "CGU")}>
++                      Publier
++                    </AlertDialogAction>
++                  </AlertDialogFooter>
++                </AlertDialogContent>
++              </AlertDialog>
++
++              <AlertDialog>
++                <AlertDialogTrigger asChild>
++                  <Button variant="outline" size="sm">
++                    Publier une nouvelle version de la confidentialité
++                  </Button>
++                </AlertDialogTrigger>
++                <AlertDialogContent>
++                  <AlertDialogHeader>
++                    <AlertDialogTitle>
++                      Redemander le consentement à la politique de confidentialité ?
++                    </AlertDialogTitle>
++                    <AlertDialogDescription>
++                      Tous les utilisateurs, mobile et web, devront accepter la nouvelle
++                      politique avant de pouvoir continuer à utiliser FERE. Cette action ne
++                      s'annule pas.
++                    </AlertDialogDescription>
++                  </AlertDialogHeader>
++                  <AlertDialogFooter>
++                    <AlertDialogCancel>Annuler</AlertDialogCancel>
++                    <AlertDialogAction
++                      onClick={() => bumpLegalVersion("privacy_version", "Confidentialité")}
++                    >
++                      Publier
++                    </AlertDialogAction>
++                  </AlertDialogFooter>
++                </AlertDialogContent>
++              </AlertDialog>
++            </div>
++          </div>
+         </CardContent>
+       </Card>
+ 
+diff --git a/src/lib/consent.ts b/src/lib/consent.ts
+new file mode 100644
+index 0000000..ea7c5dd
+--- /dev/null
++++ b/src/lib/consent.ts
+@@ -0,0 +1,89 @@
++import type { SupabaseClient } from "@supabase/supabase-js";
++import { supabase } from "@/integrations/supabase/client";
++
++export type LegalDocument = "cgu" | "privacy";
++
++/** Documents consultables : le reglement cookies s'affiche mais ne se signe pas. */
++export type LegalDocKey = LegalDocument | "cookies";
++
++export interface ConsentState {
++  cgu_version: string;
++  privacy_version: string;
++  cgu_accepted: boolean;
++  privacy_accepted: boolean;
++}
++
++export interface LegalTexts {
++  cgu: string;
++  privacy: string;
++  cookies: string;
++}
++
++/**
++ * integrations/supabase/types.ts est genere automatiquement et ne connait pas
++ * encore user_consents ni les RPC de consentement. Cast local en attendant la
++ * prochaine regeneration des types.
++ */
++const db = supabase as unknown as SupabaseClient;
++
++/**
++ * Etat du consentement de l'utilisateur connecte compare aux versions en
++ * vigueur. Retourne null en cas d'erreur : on laisse passer plutot que de
++ * bloquer le site sur un probleme reseau.
++ */
++export async function fetchConsentState(): Promise<ConsentState | null> {
++  const { data, error } = await db.rpc("get_consent_state");
++  if (error) {
++    console.error("[consent] get_consent_state:", error.message);
++    return null;
++  }
++  return (data as ConsentState) ?? null;
++}
++
++export function isConsentComplete(state: ConsentState | null): boolean {
++  if (!state) return true;
++  return state.cgu_accepted && state.privacy_accepted;
++}
++
++/** Les versions sont lues en base par la RPC, le client ne peut pas les forcer. */
++export async function acceptConsents(): Promise<boolean> {
++  const { error } = await db.rpc("accept_current_consents", {
++    p_source: "web",
++    p_app_version: null,
++  });
++  if (error) {
++    console.error("[consent] accept_current_consents:", error.message);
++    return false;
++  }
++  return true;
++}
++
++/** Textes affiches dans les modales : meme source que l'application mobile. */
++export async function fetchLegalTexts(): Promise<LegalTexts> {
++  const { data, error } = await db
++    .from("platform_settings")
++    .select("cgu, privacy_policy, cookies")
++    .limit(1)
++    .maybeSingle();
++
++  if (error) {
++    console.error("[consent] fetchLegalTexts:", error.message);
++  }
++
++  return {
++    cgu: data?.cgu || "",
++    privacy: data?.privacy_policy || "",
++    cookies: data?.cookies || "",
++  };
++}
++
++/** Consentement recueilli avant que la session existe (formulaire d'inscription). */
++export function buildSignupConsents() {
++  return {
++    cgu: true,
++    privacy: true,
++    source: "web" as const,
++    app_version: null,
++    accepted_at: new Date().toISOString(),
++  };
++}
+diff --git a/src/lib/validators.ts b/src/lib/validators.ts
+index 5f5754c..8092f13 100644
+--- a/src/lib/validators.ts
++++ b/src/lib/validators.ts
+@@ -122,6 +122,13 @@ export const phoneSignupSchema = z.object({
+   confirmPin: z
+     .string()
+     .regex(/^\d{6}$/, "Le PIN doit contenir exactement 6 chiffres"),
++  // Consentement obligatoire recueilli avant la creation du compte (APDP).
++  acceptCgu: z
++    .boolean()
++    .refine((v) => v === true, "Vous devez accepter les conditions générales d'utilisation"),
++  acceptPrivacy: z
++    .boolean()
++    .refine((v) => v === true, "Vous devez accepter la politique de confidentialité"),
+ }).refine((data) => data.pin === data.confirmPin, {
+   message: "Les PIN ne correspondent pas",
+   path: ["confirmPin"],
+diff --git a/supabase/functions/phone-auth/index.ts b/supabase/functions/phone-auth/index.ts
+index 8cd9554..08d278a 100644
+--- a/supabase/functions/phone-auth/index.ts
++++ b/supabase/functions/phone-auth/index.ts
+@@ -350,6 +350,10 @@ async function handleRegister(supabaseAdmin: any, body: any) {
+       otp_code: otpHash || 'FAILED',
+       otp_expires_at: new Date(Date.now() + OTP_EXPIRY_MINUTES * 60000).toISOString(),
+       otp_attempts: 0,
++      // Consentement CGU / confidentialité coché sur le formulaire d'inscription.
++      // Null si le client est une version antérieure : la barrière de consentement
++      // au démarrage prendra alors le relais à la première connexion.
++      consents: body.consents ?? null,
+     }, { onConflict: 'phone' });
+ 
+   if (upsertError) {
+@@ -513,6 +517,46 @@ async function handleVerifyRegistration(supabaseAdmin: any, body: any) {
+     console.error('[phone-auth] Role insert error:', roleError);
+   }
+ 
++  // Trace du consentement CGU / confidentialité (exigence APDP). Un échec
++  // d'archivage ne doit pas faire échouer la création du compte : la barrière
++  // de consentement au démarrage redemandera l'acceptation.
++  const consents = pending.consents;
++  if (consents?.cgu === true && consents?.privacy === true) {
++    try {
++      const { data: settings } = await supabaseAdmin
++        .from('platform_settings')
++        .select('cgu_version, privacy_version')
++        .limit(1)
++        .maybeSingle();
++
++      const source = consents.source === 'web' ? 'web' : 'mobile';
++      const appVersion = consents.app_version ?? null;
++
++      const { error: consentError } = await supabaseAdmin.from('user_consents').insert([
++        {
++          user_id: userId,
++          document: 'cgu',
++          version: settings?.cgu_version ?? '1.0',
++          source,
++          app_version: appVersion,
++        },
++        {
++          user_id: userId,
++          document: 'privacy',
++          version: settings?.privacy_version ?? '1.0',
++          source,
++          app_version: appVersion,
++        },
++      ]);
++
++      if (consentError) {
++        console.error('[phone-auth] Consent insert error:', consentError);
++      }
++    } catch (consentErr) {
++      console.error('[phone-auth] Consent insert failed:', consentErr);
++    }
++  }
++
+   // Delete pending registration
+   await supabaseAdmin.from('pending_registrations').delete().eq('phone', phone);
+ 
+-- 
+2.48.1
+
