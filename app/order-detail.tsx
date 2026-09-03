@@ -386,7 +386,7 @@ export default function OrderDetailScreen() {
     } finally {
       setCancelling(false);
     }
-  }, [order, user, delivery, selectedReasonId, attachmentUri, loadOrder]);
+  }, [order, user, delivery, selectedReasonId, attachmentUri, loadOrder, isOrderVendor, isOrderDriver]);
 
   const handlePayBalance = useCallback(async () => {
     if (!order || !user || payingBalance) return;
