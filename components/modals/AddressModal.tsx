@@ -13,6 +13,7 @@ import {
 import { X, MapPin } from 'lucide-react-native';
 import * as Location from 'expo-location';
 import { supabase } from '@/lib/supabase';
+import LocationPickerMap from '@/components/maps/LocationPickerMap';
 import type { DeliveryAddress } from '@/types/database';
 
 interface AddressModalProps {
@@ -270,26 +271,30 @@ export default function AddressModal({
           </View>
 
           <View style={styles.field}>
-            <Text style={styles.label}>Géolocalisation</Text>
-            <TouchableOpacity
-              style={styles.locationButton}
-              onPress={handleGetLocation}
-              disabled={gettingLocation}>
-              {gettingLocation ? (
-                <ActivityIndicator size="small" color="#003f2f" />
-              ) : (
-                <>
-                  <MapPin size={20} color="#003f2f" />
-                  <Text style={styles.locationButtonText}>
-                    {lat && lng ? 'Position enregistrée' : 'Pointer ma position'}
-                  </Text>
-                </>
-              )}
-            </TouchableOpacity>
-            {lat && lng && (
+            <Text style={styles.label}>Position de livraison</Text>
+            <Text style={styles.locationHelp}>
+              Posez le repère sur votre domicile ou votre lieu de livraison. Sans position
+              exacte, le livreur ne peut pas vous trouver et le suivi en temps réel ne
+              fonctionne pas.
+            </Text>
+
+            <LocationPickerMap
+              value={lat != null && lng != null ? { lat, lng } : null}
+              onChange={(pos) => {
+                setLat(pos.lat);
+                setLng(pos.lng);
+                setError(null);
+              }}
+              onUseCurrentPosition={handleGetLocation}
+              locating={gettingLocation}
+            />
+
+            {lat != null && lng != null ? (
               <Text style={styles.coordinatesText}>
-                Lat: {lat.toFixed(6)}, Lng: {lng.toFixed(6)}
+                Position enregistrée · {lat.toFixed(5)}, {lng.toFixed(5)}
               </Text>
+            ) : (
+              <Text style={styles.coordinatesMissing}>Aucune position choisie</Text>
             )}
           </View>
 
@@ -412,6 +417,19 @@ const styles = StyleSheet.create({
     color: '#6b7280',
     marginTop: 8,
     textAlign: 'center',
+  },
+  coordinatesMissing: {
+    fontSize: 12,
+    color: '#b45309',
+    marginTop: 8,
+    textAlign: 'center',
+    fontWeight: '500',
+  },
+  locationHelp: {
+    fontSize: 12,
+    color: '#6b7280',
+    lineHeight: 17,
+    marginBottom: 10,
   },
   defaultCheckbox: {
     flexDirection: 'row',
