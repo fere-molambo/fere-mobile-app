@@ -17,7 +17,12 @@
       "supportsTablet": true,
       "bundleIdentifier": "com.juniormolambo.fere",
       "infoPlist": {
-        "ITSAppUsesNonExemptEncryption": false
+        "ITSAppUsesNonExemptEncryption": false,
+        "NSLocationWhenInUseUsageDescription": "FERE utilise votre position pour afficher le suivi de votre commande en temps reel.",
+        "NSLocationAlwaysAndWhenInUseUsageDescription": "FERE suit la position du livreur pendant la course, meme ecran eteint, pour que le vendeur et le client voient son deplacement en temps reel.",
+        "UIBackgroundModes": [
+          "location"
+        ]
       }
     },
     "android": {
@@ -66,7 +71,15 @@
       "expo-secure-store",
       "expo-camera",
       "expo-image-picker",
-      "expo-location",
+      [
+        "expo-location",
+        {
+          "locationWhenInUsePermission": "FERE utilise votre position pour afficher le suivi de votre commande en temps reel.",
+          "locationAlwaysAndWhenInUsePermission": "FERE suit la position du livreur pendant la course, meme ecran eteint, pour que le vendeur et le client voient son deplacement en temps reel.",
+          "isIosBackgroundLocationEnabled": true,
+          "isAndroidBackgroundLocationEnabled": true
+        }
+      ],
       "expo-document-picker",
       "expo-notifications",
       "expo-splash-screen"

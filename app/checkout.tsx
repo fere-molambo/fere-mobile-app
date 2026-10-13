@@ -38,7 +38,7 @@ function formatPrice(n: number) {
 export default function CheckoutScreen() {
   const router = useRouter();
   const { user } = useAuth();
-  const { items, getItemsByShop } = useCart();
+  const { items, getItemsByShop, clearCart } = useCart();
 
   const [addresses, setAddresses] = useState<DeliveryAddress[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
@@ -49,6 +49,7 @@ export default function CheckoutScreen() {
 
   const [platformFees, setPlatformFees] = useState<PlatformFees | null>(null);
   const [commissionRates, setCommissionRates] = useState<Map<string, number>>(new Map());
+  const [defaultCommissionRate, setDefaultCommissionRate] = useState(10);
   const [shopDistances, setShopDistances] = useState<Map<string, number>>(new Map());
   const [summary, setSummary] = useState<CheckoutSummary | null>(null);
 
@@ -108,14 +109,24 @@ export default function CheckoutScreen() {
   const loadCommissionRates = async () => {
     const { data, error: commError } = await supabase
       .from('category_commissions')
-      .select('category_id, commission_rate');
+      .select('category_id, commission_rate, commission_type');
 
     if (commError) throw commError;
     const map = new Map<string, number>();
+    // La ligne sans categorie est la regle « Toutes les categories » du tableau
+    // de bord super admin. Elle etait ignoree : le taux parametre n'avait aucun
+    // effet et un 10 % code en dur s'appliquait a toutes les commandes.
+    let fallback: number | null = null;
     for (const row of data || []) {
-      if (row.category_id) map.set(row.category_id, Number(row.commission_rate));
+      if ((row as any).commission_type === 'service') continue;
+      if (row.category_id) {
+        map.set(row.category_id, Number(row.commission_rate));
+      } else {
+        fallback = Number(row.commission_rate);
+      }
     }
     setCommissionRates(map);
+    setDefaultCommissionRate(fallback ?? 10);
   };
 
   const calculateDistances = useCallback(async (addressId: string) => {
@@ -173,7 +184,7 @@ export default function CheckoutScreen() {
       const distances = await calculateDistances(selectedAddressId);
       buildSummary(distances);
     })();
-  }, [selectedAddressId, platformFees, commissionRates, items]);
+  }, [selectedAddressId, platformFees, commissionRates, defaultCommissionRate, items]);
 
   const buildSummary = (distances: Map<string, number>) => {
     if (!platformFees) return;
@@ -186,7 +197,7 @@ export default function CheckoutScreen() {
       const deliveryFee = calculateDeliveryFee(distanceMeters, platformFees);
       const deliveryCommission = Math.round(deliveryFee * (platformFees.delivery_commission_fere / 100));
 
-      let productCommissionRate = 10;
+      let productCommissionRate = defaultCommissionRate;
       for (const item of shopItems) {
         if (item.product.category_id && commissionRates.has(item.product.category_id)) {
           productCommissionRate = commissionRates.get(item.product.category_id)!;
@@ -337,7 +348,7 @@ export default function CheckoutScreen() {
         // Insertion items
         const orderItems = so.items.map((item: any) => {
           const rate = (item.product.category_id && commissionRates.get(item.product.category_id))
-            ?? so.productCommissionRate ?? 10;
+            ?? so.productCommissionRate ?? defaultCommissionRate;
           const itemTotal = (item as any).totalPrice ?? (item.quantity * item.unitPrice);
           return {
             order_id: order.id,
@@ -364,6 +375,9 @@ export default function CheckoutScreen() {
           lat: so.shop.geolocation_lat || 0,
           lng: so.shop.geolocation_lng || 0,
           address: so.shop.address || '',
+          // Sans ce numero, le livreur n'a aucun bouton pour appeler le vendeur
+          // quand il ne trouve pas le point de retrait.
+          phone: so.shop.contact_phone || null,
         };
         const { error: deliveryError } = await supabase
           .from('delivery_requests')
@@ -388,6 +402,12 @@ export default function CheckoutScreen() {
         createdOrders.push(order);
       }
       // === Fin création des commandes ===
+
+      // Les commandes existent desormais en base : le panier doit etre vide ici
+      // et non au retour du paiement. Sinon un abandon, un retour arriere ou une
+      // coupure reseau laissait les articles dedans, et ils etaient refactures
+      // lors de la commande suivante.
+      clearCart();
 
       const omBody = {
         action: 'initialize',

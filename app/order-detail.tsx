@@ -25,8 +25,9 @@ import {
   formatDate,
   ORDER_STEPS,
   getOrderStepIndex,
-  DELIVERY_STEPS,
-  getDeliveryStepIndex,
+  DELIVERY_STEPS_SIMPLE,
+  TRACKED_DELIVERY_STATUSES,
+  getSimpleDeliveryStepIndex,
   getDeliveryTimestamp,
   PAYMENT_STATUS_CONFIG,
   ORDER_STATUS_CONFIG,
@@ -195,7 +196,11 @@ export default function OrderDetailScreen() {
           zone_id, pickup_point, pickup_points, delivery_point, total_distance_meters
         `)
         .eq('order_id', id as string)
-        .eq('is_return', false)
+        // Pas de filtre sur is_return : quand le client annule a l'arrivee, une
+        // course retour est creee vers le vendeur. En ne chargeant que l'aller,
+        // ce trajet n'etait jamais affiche ni suivi par personne.
+        .order('created_at', { ascending: false })
+        .limit(1)
         .maybeSingle();
 
       setDelivery(deliveryData as any);
@@ -499,9 +504,27 @@ export default function OrderDetailScreen() {
     });
   };
 
+  // La destination suit la phase de la course, pas le role de celui qui regarde :
+  // tant que le colis n'est pas recupere, le livreur roule vers la boutique ;
+  // sur une course retour il y retourne. Avant, la carte visait toujours le
+  // client, donc la distance et l'ETA affiches au vendeur etaient faux.
+  const shopPoint = (delivery?.pickup_point as any) || (delivery?.pickup_points as any)?.[0] || null;
+  const headingToShop =
+    !!delivery &&
+    (delivery.is_return || ['assigned', 'in_progress'].includes(delivery.status));
+  const trackingDestination = headingToShop
+    ? {
+        lat: shopPoint?.lat ?? (order.shop as any)?.geolocation_lat ?? undefined,
+        lng: shopPoint?.lng ?? (order.shop as any)?.geolocation_lng ?? undefined,
+      }
+    : {
+        lat: order.delivery_address?.geolocation_lat ?? undefined,
+        lng: order.delivery_address?.geolocation_lng ?? undefined,
+      };
+
   const paymentStatusConfig = PAYMENT_STATUS_CONFIG[order.payment_status] || PAYMENT_STATUS_CONFIG.pending;
   const currentOrderStep = getOrderStepIndex(order.status);
-  const deliveryStepIndex = delivery ? getDeliveryStepIndex(delivery.status) : -1;
+  const deliveryStepIndex = delivery ? getSimpleDeliveryStepIndex(delivery.status) : -1;
   const deliveryStatus = delivery?.status ?? null;
   // Payer le solde a la livraison est une action du client, pas du vendeur ni du livreur.
   const isArrived = isOrderClient && deliveryStatus === 'arrived' && order.status !== 'cancelled' && order.status !== 'delivered' && order.payment_status !== 'paid';
@@ -603,7 +626,7 @@ export default function OrderDetailScreen() {
               <Text style={styles.sectionTitle}>Suivi de livraison</Text>
             </View>
             <View style={styles.deliverySteps}>
-              {DELIVERY_STEPS.map((step, index) => {
+              {DELIVERY_STEPS_SIMPLE.map((step, index) => {
                 const isActive = index === deliveryStepIndex;
                 const isCompleted = index < deliveryStepIndex;
                 const StepIcon = step.Icon;
@@ -642,12 +665,12 @@ export default function OrderDetailScreen() {
           </View>
         )}
 
-        {delivery && ['in_progress', 'picked_up', 'en_route_client', 'arrived'].includes(delivery.status) && (
+        {delivery && TRACKED_DELIVERY_STATUSES.includes(delivery.status) && (
           <TrackingMap
             referenceId={delivery.id}
             referenceType="delivery"
-            destinationLat={order.delivery_address?.geolocation_lat ?? undefined}
-            destinationLng={order.delivery_address?.geolocation_lng ?? undefined}
+            destinationLat={trackingDestination.lat}
+            destinationLng={trackingDestination.lng}
           />
         )}
 

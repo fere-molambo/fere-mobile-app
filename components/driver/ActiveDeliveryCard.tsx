@@ -5,6 +5,7 @@ import { useRouter } from 'expo-router';
 import { DeliveryRequest, DeliveryStatus } from '@/types/database';
 import { supabase } from '@/lib/supabase';
 import { formatDistance, formatEarnings, openGPSNavigation, callPhone, getNextAction } from '@/lib/driverUtils';
+import { TRACKED_DELIVERY_STATUSES } from '@/components/order/OrderDetailConstants';
 import { startConversation } from '@/lib/chatUtils';
 import { startTracking } from '@/lib/trackingService';
 import { sendNotificationToUser } from '@/lib/notificationService';
@@ -32,9 +33,12 @@ export default function ActiveDeliveryCard({ delivery, userId, onUpdate }: Activ
   const trackingCleanupRef = useRef<(() => void) | null>(null);
 
   useEffect(() => {
-    // 'arrived' inclus : sinon la carte du client s'éteint pile au moment où
-    // il reçoit « le livreur est arrivé ».
-    const shouldTrack = ['in_progress', 'picked_up', 'en_route_client', 'arrived'].includes(delivery.status);
+    // Liste partagee avec l'ecran de commande : le livreur doit emettre sa
+    // position exactement tant que les autres affichent la carte. 'assigned' y
+    // figure car c'est la phase ou le vendeur attend de le voir arriver, et
+    // 'arrived' aussi, sinon la carte du client s'eteignait pile au moment ou
+    // il recevait « le livreur est arrive ».
+    const shouldTrack = TRACKED_DELIVERY_STATUSES.includes(delivery.status);
     if (shouldTrack) {
       startTracking(userId, delivery.id, 'delivery', 'driver').then((result) => {
         if (result) trackingCleanupRef.current = result.cleanup;

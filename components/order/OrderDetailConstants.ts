@@ -93,6 +93,34 @@ export function getOrderStepIndex(status: string): number {
   return 0;
 }
 
+// Statuts pendant lesquels le livreur publie sa position et la carte reste
+// affichee. 'assigned' en fait partie : c'est la phase ou le livreur roule vers
+// la boutique, et ou le vendeur a justement besoin de le voir approcher.
+// Cette liste est partagee avec l'ecran livreur : deux copies divergentes, et
+// le suivi s'arrete d'un cote sans qu'on le voie de l'autre.
+export const TRACKED_DELIVERY_STATUSES = [
+  'assigned',
+  'in_progress',
+  'picked_up',
+  'en_route_client',
+  'arrived',
+];
+
+// Vue membre : 3 etapes seulement. Les 7 statuts restent en base, ils pilotent
+// le suivi GPS et le paiement du solde ; on ne simplifie que l'affichage.
+export const DELIVERY_STEPS_SIMPLE = [
+  { key: 'assigned', label: 'Acceptée', subtitle: 'Un livreur prend en charge', Icon: CheckCircle },
+  { key: 'picked_up', label: 'Récupérée', subtitle: 'Colis retiré chez le vendeur', Icon: BoxSelect },
+  { key: 'arrived', label: 'Arrivée', subtitle: null, Icon: MapPin },
+];
+
+export function getSimpleDeliveryStepIndex(status: string): number {
+  if (['assigned', 'in_progress'].includes(status)) return 0;
+  if (['picked_up', 'en_route_client'].includes(status)) return 1;
+  if (['arrived', 'delivered'].includes(status)) return 2;
+  return -1;
+}
+
 export const DELIVERY_STEPS = [
   { key: 'pending', label: 'En attente', subtitle: "Recherche d'un livreur", Icon: Clock },
   { key: 'assigned', label: 'Acceptée', subtitle: null, Icon: CheckCircle },
@@ -115,7 +143,9 @@ export function getDeliveryTimestamp(step: string, delivery: DeliveryRequest): s
     case 'in_progress': return formatTime(delivery.started_at);
     case 'picked_up': return formatTime(delivery.picked_up_at);
     case 'en_route_client': return formatTime(delivery.en_route_client_at);
-    case 'arrived': return formatTime(delivery.arrived_at_client_at);
+    // La vue simplifiee fusionne arrivee et livraison : si le livreur passe
+    // directement a 'livree', l'etape resterait sans heure.
+    case 'arrived': return formatTime(delivery.arrived_at_client_at || delivery.delivered_at);
     case 'delivered': return formatTime(delivery.delivered_at);
     default: return null;
   }

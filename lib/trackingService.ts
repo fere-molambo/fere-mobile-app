@@ -32,6 +32,21 @@ export async function startTracking(
       return null;
     }
 
+    // Le livreur range son telephone pendant la course : sans l'autorisation
+    // d'arriere-plan, iOS coupe le GPS des le verrouillage de l'ecran et le
+    // suivi s'arrete. Un refus n'est pas bloquant, le suivi marche alors
+    // seulement application ouverte.
+    if (trackerRole === 'driver') {
+      try {
+        const bg = await Location.requestBackgroundPermissionsAsync();
+        if (bg?.status !== 'granted') {
+          console.warn('[tracking] arrière-plan refusé : suivi limité à l\'application ouverte');
+        }
+      } catch (bgErr: any) {
+        console.warn('[tracking] arrière-plan indisponible:', bgErr?.message || bgErr);
+      }
+    }
+
     const dbReferenceType = REFERENCE_TYPES[referenceType] || referenceType;
 
     // Pas d'upsert : aucune contrainte UNIQUE sur (tracker_id, reference_id),
