@@ -38,7 +38,7 @@ function formatPrice(n: number) {
 export default function CheckoutScreen() {
   const router = useRouter();
   const { user } = useAuth();
-  const { items, getItemsByShop, clearCart } = useCart();
+  const { items, getItemsByShop, clearCart, removeFromCart } = useCart();
 
   const [addresses, setAddresses] = useState<DeliveryAddress[]>([]);
   const [selectedAddressId, setSelectedAddressId] = useState<string | null>(null);
@@ -237,6 +237,11 @@ export default function CheckoutScreen() {
     setSubmitting(true);
     setError(null);
 
+    // Articles dont la commande a reellement ete creee : s'ils restent au panier
+    // apres un echec a mi-parcours, ils seront refactures a la tentative
+    // suivante — le defaut meme qu'on corrige ici.
+    const committedItemIds: string[] = [];
+
     try {
       const paymentGroupId = uuidv4();
       const paymentReference = generateOrderNumber();
@@ -400,6 +405,7 @@ export default function CheckoutScreen() {
         if (deliveryError) throw new Error(`Échec création livraison: ${deliveryError.message}`);
 
         createdOrders.push(order);
+        committedItemIds.push(...so.items.map((item: any) => item.id));
       }
       // === Fin création des commandes ===
 
@@ -465,6 +471,10 @@ export default function CheckoutScreen() {
         },
       });
     } catch (err: any) {
+      // Echec a mi-parcours sur un panier multi-boutiques : on retire ce qui a
+      // deja donne lieu a une commande, on laisse le reste pour que le client
+      // puisse reessayer sans tout ressaisir.
+      committedItemIds.forEach(removeFromCart);
       setError(err.message || 'Erreur lors de la commande');
     } finally {
       setSubmitting(false);
