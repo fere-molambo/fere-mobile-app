@@ -13,6 +13,7 @@ import AppHeader from '@/components/AppHeader';
 import AvailableDeliveries from './AvailableDeliveries';
 import ActiveDeliveries from './ActiveDeliveries';
 import DeliveryHistory from './DeliveryHistory';
+import DriverStatusBanner from './DriverStatusBanner';
 
 type DriverTab = 'available' | 'active' | 'history';
 
@@ -146,6 +147,10 @@ export default function DriverHomeScreen({ userId }: DriverHomeScreenProps) {
   return (
     <View style={styles.container}>
       <AppHeader hideCart notificationCount={0} />
+
+      {/* Sans ce bandeau, un livreur non valide voit simplement une liste vide
+          sans comprendre pourquoi : les courses lui sont masquees cote base. */}
+      <DriverStatusBanner userId={userId} />
 
       <View style={styles.tabBar}>
         {tabs.map((tab) => (
