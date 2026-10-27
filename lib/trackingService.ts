@@ -1,5 +1,10 @@
 import { Platform } from 'react-native';
 import { supabase } from '@/lib/supabase';
+import {
+  pushDriverPosition,
+  startDriverBackgroundTracking,
+  stopDriverBackgroundTracking,
+} from '@/lib/backgroundTracking';
 
 interface TrackingResult {
   sessionId: string;
@@ -14,6 +19,118 @@ const REFERENCE_TYPES: Record<string, string> = {
   booking: 'service_booking',
   service_booking: 'service_booking',
 };
+
+/**
+ * Garantit une session active pour ce suivi. Pas d'upsert : aucune contrainte
+ * UNIQUE sur (tracker_id, reference_id), ON CONFLICT echouerait.
+ */
+async function ensureSession(
+  userId: string,
+  referenceId: string,
+  referenceType: string,
+  trackerRole: string,
+): Promise<string | null> {
+  const dbReferenceType = REFERENCE_TYPES[referenceType] || referenceType;
+
+  const { data: existing } = await supabase
+    .from('live_tracking_sessions')
+    .select('id, is_active')
+    .eq('tracker_id', userId)
+    .eq('reference_id', referenceId)
+    .limit(1)
+    .maybeSingle();
+
+  if (existing?.id) {
+    // Une session deja active n'est pas touchee : la reecrire a chaque
+    // rafraichissement de la liste reinitialiserait started_at pour rien.
+    if (existing.is_active) return existing.id;
+
+    const now = new Date().toISOString();
+    const { error } = await supabase
+      .from('live_tracking_sessions')
+      .update({
+        tracker_role: trackerRole,
+        reference_type: dbReferenceType,
+        is_active: true,
+        started_at: now,
+        updated_at: now,
+      })
+      .eq('id', existing.id);
+    if (error) {
+      console.error('[tracking] update session:', error.message);
+      return null;
+    }
+    return existing.id;
+  }
+
+  const now = new Date().toISOString();
+  const { data: created, error } = await supabase
+    .from('live_tracking_sessions')
+    .insert({
+      tracker_id: userId,
+      tracker_role: trackerRole,
+      reference_type: dbReferenceType,
+      reference_id: referenceId,
+      is_active: true,
+      started_at: now,
+      updated_at: now,
+    })
+    .select('id')
+    .single();
+  if (error || !created) {
+    console.error('[tracking] insert session:', error?.message);
+    return null;
+  }
+  return created.id;
+}
+
+/**
+ * Aligne le suivi du livreur sur ses courses en cours : une session active par
+ * course suivie, aucune pour les autres, et la tache d'arriere-plan qui tourne
+ * tant qu'il en reste une.
+ *
+ * Le suivi depend de l'etat des courses, plus d'un ecran : avant, chaque carte
+ * de course lancait son propre GPS et le coupait en disparaissant, si bien que
+ * changer d'onglet suffisait a faire disparaitre le livreur chez le vendeur.
+ */
+export async function syncDriverTracking(driverId: string, deliveryIds: string[]): Promise<void> {
+  if (Platform.OS === 'web' || !driverId) return;
+
+  try {
+    let deactivate = supabase
+      .from('live_tracking_sessions')
+      .update({ is_active: false, updated_at: new Date().toISOString() })
+      .eq('tracker_id', driverId)
+      .eq('tracker_role', 'driver')
+      .eq('is_active', true);
+    if (deliveryIds.length > 0) {
+      deactivate = deactivate.not('reference_id', 'in', `(${deliveryIds.join(',')})`);
+    }
+    const { error: deactivateError } = await deactivate;
+    if (deactivateError) console.error('[tracking] désactivation:', deactivateError.message);
+
+    if (deliveryIds.length === 0) {
+      await stopDriverBackgroundTracking();
+      return;
+    }
+
+    for (const deliveryId of deliveryIds) {
+      await ensureSession(driverId, deliveryId, 'delivery', 'driver');
+    }
+
+    const started = await startDriverBackgroundTracking();
+    if (!started) return;
+
+    // Premiere position tout de suite : la tache n'en livre une qu'apres
+    // quelques secondes, et une course qui vient d'etre acceptee doit
+    // apparaitre sur la carte du vendeur sans attendre.
+    const Location = require('expo-location');
+    const current = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+    await pushDriverPosition(driverId, current);
+  } catch (err: any) {
+    console.error('[tracking] syncDriverTracking:', err?.message || err);
+  }
+}
 
 export async function startTracking(
   userId: string,
@@ -32,71 +149,8 @@ export async function startTracking(
       return null;
     }
 
-    // Le livreur range son telephone pendant la course : sans l'autorisation
-    // d'arriere-plan, iOS coupe le GPS des le verrouillage de l'ecran et le
-    // suivi s'arrete. Un refus n'est pas bloquant, le suivi marche alors
-    // seulement application ouverte.
-    if (trackerRole === 'driver') {
-      try {
-        const bg = await Location.requestBackgroundPermissionsAsync();
-        if (bg?.status !== 'granted') {
-          console.warn('[tracking] arrière-plan refusé : suivi limité à l\'application ouverte');
-        }
-      } catch (bgErr: any) {
-        console.warn('[tracking] arrière-plan indisponible:', bgErr?.message || bgErr);
-      }
-    }
-
-    const dbReferenceType = REFERENCE_TYPES[referenceType] || referenceType;
-
-    // Pas d'upsert : aucune contrainte UNIQUE sur (tracker_id, reference_id),
-    // ON CONFLICT échouerait. On cherche la session existante puis update/insert.
-    const { data: existing } = await supabase
-      .from('live_tracking_sessions')
-      .select('id')
-      .eq('tracker_id', userId)
-      .eq('reference_id', referenceId)
-      .limit(1)
-      .maybeSingle();
-
-    let sessionId: string | null = null;
-
-    if (existing?.id) {
-      const { error } = await supabase
-        .from('live_tracking_sessions')
-        .update({
-          tracker_role: trackerRole,
-          reference_type: dbReferenceType,
-          is_active: true,
-          started_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', existing.id);
-      if (error) {
-        console.error('[tracking] update session:', error.message);
-        return null;
-      }
-      sessionId = existing.id;
-    } else {
-      const { data: created, error } = await supabase
-        .from('live_tracking_sessions')
-        .insert({
-          tracker_id: userId,
-          tracker_role: trackerRole,
-          reference_type: dbReferenceType,
-          reference_id: referenceId,
-          is_active: true,
-          started_at: new Date().toISOString(),
-          updated_at: new Date().toISOString(),
-        })
-        .select('id')
-        .single();
-      if (error || !created) {
-        console.error('[tracking] insert session:', error?.message);
-        return null;
-      }
-      sessionId = created.id;
-    }
+    const sessionId = await ensureSession(userId, referenceId, referenceType, trackerRole);
+    if (!sessionId) return null;
 
     const pushPosition = (coords: any) => {
       supabase

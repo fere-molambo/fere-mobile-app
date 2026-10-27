@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MapPin, Maximize2 } from 'lucide-react-native';
 import { useTrackingSession } from '@/hooks/useTrackingSession';
@@ -28,8 +28,17 @@ function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
 
 export default function TrackingMap({ referenceId, referenceType, destination, destinationLat, destinationLng, trackerLabel, height = 250 }: Props) {
   const resolvedDestination = destination ?? (destinationLat !== undefined && destinationLng !== undefined ? { lat: destinationLat, lng: destinationLng } : null);
-  const { position, isActive } = useTrackingSession(referenceId);
+  const { position, isActive, updatedAt } = useTrackingSession(referenceId);
   const [fullscreen, setFullscreen] = useState(false);
+  const [now, setNow] = useState(() => Date.now());
+
+  // Fait vieillir l'indicateur meme sans nouvelle position : c'est justement
+  // quand plus rien n'arrive qu'il doit cesser d'afficher « En direct ».
+  useEffect(() => {
+    if (!position) return;
+    const timer = setInterval(() => setNow(Date.now()), 15000);
+    return () => clearInterval(timer);
+  }, [position]);
 
   if ((!isActive || !position) && !resolvedDestination) {
     return (
@@ -46,6 +55,17 @@ export default function TrackingMap({ referenceId, referenceType, destination, d
   const distText = dist !== null ? (dist < 1 ? `${Math.round(dist * 1000)} m` : `${dist.toFixed(1)} km`) : null;
   const etaMinutes = dist !== null && position?.speed && position.speed > 1 ? Math.ceil((dist * 1000) / (position.speed * 60)) : null;
   const speedKmh = position?.speed && position.speed > 0 ? Math.round(position.speed * 3.6) : null;
+
+  // « En direct » s'affichait des qu'une position existait, meme vieille de dix
+  // minutes : le vendeur voyait un repere fige presente comme du temps reel.
+  const ageSeconds = updatedAt ? Math.max(0, Math.round((now - new Date(updatedAt).getTime()) / 1000)) : null;
+  const freshness = !position
+    ? { label: 'Hors ligne', stale: true }
+    : ageSeconds === null || ageSeconds < 60
+      ? { label: 'En direct', stale: false }
+      : ageSeconds < 3600
+        ? { label: `Il y a ${Math.round(ageSeconds / 60)} min`, stale: true }
+        : { label: 'Position ancienne', stale: true };
 
   return (
     <View style={styles.container}>
@@ -64,7 +84,9 @@ export default function TrackingMap({ referenceId, referenceType, destination, d
       <View style={styles.infoBar}>
         <View style={styles.infoItem}>
           <Text style={styles.infoLabel}>{trackerLabel || 'Position'}</Text>
-          <Text style={styles.infoValue}>{position ? 'En direct' : 'Hors ligne'}</Text>
+          <Text style={[styles.infoValue, freshness.stale && styles.infoValueStale]}>
+            {freshness.label}
+          </Text>
         </View>
         {distText && (
           <View style={styles.infoItem}>
@@ -101,6 +123,9 @@ const styles = StyleSheet.create({
   infoItem: { flex: 1 },
   infoLabel: { fontSize: 11, color: '#999', marginBottom: 2 },
   infoValue: { fontSize: 14, fontWeight: '600', color: '#1a1a1a' },
+  infoValueStale: {
+    color: '#b45309',
+  },
   infoValueGreen: { fontSize: 14, fontWeight: '700', color: '#003f2f' },
   placeholderContent: { flex: 1, justifyContent: 'center', alignItems: 'center', gap: 8, padding: 20 },
   placeholderText: { fontSize: 13, color: '#999', textAlign: 'center' },

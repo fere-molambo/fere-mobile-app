@@ -14,6 +14,8 @@ import AvailableDeliveries from './AvailableDeliveries';
 import ActiveDeliveries from './ActiveDeliveries';
 import DeliveryHistory from './DeliveryHistory';
 import DriverStatusBanner from './DriverStatusBanner';
+import { syncDriverTracking } from '@/lib/trackingService';
+import { TRACKED_DELIVERY_STATUSES } from '@/components/order/OrderDetailConstants';
 
 type DriverTab = 'available' | 'active' | 'history';
 
@@ -42,6 +44,23 @@ export default function DriverHomeScreen({ userId }: DriverHomeScreenProps) {
   useEffect(() => {
     fetchAll();
   }, [fetchAll]);
+
+  // Cle stable : la liste est rechargee a chaque rafraichissement, on ne
+  // resynchronise que si l'ensemble des courses suivies change vraiment.
+  const trackedKey = activeDeliveries
+    .filter((d) => TRACKED_DELIVERY_STATUSES.includes(d.status))
+    .map((d) => d.id)
+    .sort()
+    .join(',');
+
+  // Le suivi vit ici, et non dans chaque carte de course : il doit continuer
+  // quand le livreur change d'onglet ou ouvre Google Maps pour naviguer.
+  // Attendre la fin du premier chargement, sinon la liste encore vide
+  // couperait le suivi de toutes les courses au demarrage.
+  useEffect(() => {
+    if (!userId || loading) return;
+    syncDriverTracking(userId, trackedKey ? trackedKey.split(',') : []);
+  }, [userId, trackedKey, loading]);
 
   useEffect(() => {
     const channel = supabase
@@ -96,12 +115,18 @@ export default function DriverHomeScreen({ userId }: DriverHomeScreenProps) {
   };
 
   const fetchActive = async () => {
-    const { data } = await supabase
+    const { data, error } = await supabase
       .from('delivery_requests')
       .select('*, delivery_zones(name, city), order:orders!order_id(order_number)')
       .eq('driver_id', userId)
-      .in('status', ['assigned', 'in_progress', 'picked_up', 'en_route_client', 'arrived'])
+      .in('status', TRACKED_DELIVERY_STATUSES)
       .order('created_at', { ascending: false });
+    // Le suivi GPS se cale sur cette liste : une coupure reseau qui la viderait
+    // arreterait le suivi de toutes les courses. On garde la liste precedente.
+    if (error) {
+      console.warn('[driver] courses actives non rafraichies:', error.message);
+      return;
+    }
     setActiveDeliveries((data as DeliveryRequest[]) || []);
   };
 

@@ -77,7 +77,8 @@
           "locationWhenInUsePermission": "FERE utilise votre position pour afficher le suivi de votre commande en temps reel.",
           "locationAlwaysAndWhenInUsePermission": "FERE suit la position du livreur pendant la course, meme ecran eteint, pour que le vendeur et le client voient son deplacement en temps reel.",
           "isIosBackgroundLocationEnabled": true,
-          "isAndroidBackgroundLocationEnabled": true
+          "isAndroidBackgroundLocationEnabled": false,
+          "isAndroidForegroundServiceEnabled": true
         }
       ],
       "expo-document-picker",

@@ -11,11 +11,14 @@ interface TrackingPosition {
 interface UseTrackingSessionResult {
   position: TrackingPosition | null;
   isActive: boolean;
+  /** Heure de la derniere position recue : permet de distinguer le direct d'une position figee. */
+  updatedAt: string | null;
 }
 
 export function useTrackingSession(referenceId: string): UseTrackingSessionResult {
   const [position, setPosition] = useState<TrackingPosition | null>(null);
   const [isActive, setIsActive] = useState(false);
+  const [updatedAt, setUpdatedAt] = useState<string | null>(null);
   const channelRef = useRef<any>(null);
 
   useEffect(() => {
@@ -24,7 +27,7 @@ export function useTrackingSession(referenceId: string): UseTrackingSessionResul
     const loadSession = async () => {
       const { data } = await supabase
         .from('live_tracking_sessions')
-        .select('id, current_lat, current_lng, heading, speed, is_active')
+        .select('id, current_lat, current_lng, heading, speed, is_active, updated_at')
         .eq('reference_id', referenceId)
         .eq('is_active', true)
         .order('updated_at', { ascending: false })
@@ -39,6 +42,7 @@ export function useTrackingSession(referenceId: string): UseTrackingSessionResul
           speed: data.speed,
         });
         setIsActive(true);
+        setUpdatedAt(data.updated_at ?? null);
       }
     };
 
@@ -67,6 +71,7 @@ export function useTrackingSession(referenceId: string): UseTrackingSessionResul
               speed: row.speed,
             });
             setIsActive(true);
+            setUpdatedAt(row.updated_at ?? new Date().toISOString());
           } else {
             setIsActive(false);
           }
@@ -83,5 +88,5 @@ export function useTrackingSession(referenceId: string): UseTrackingSessionResul
     };
   }, [referenceId]);
 
-  return { position, isActive };
+  return { position, isActive, updatedAt };
 }

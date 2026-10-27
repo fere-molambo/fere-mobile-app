@@ -1,13 +1,11 @@
-import React, { useState, useCallback, useRef, useEffect } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, ActivityIndicator, Alert } from 'react-native';
 import { MapPin, Navigation, Phone, Package, Clock, CircleCheck as CheckCircle, MessageCircle } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
 import { DeliveryRequest, DeliveryStatus } from '@/types/database';
 import { supabase } from '@/lib/supabase';
 import { formatDistance, formatEarnings, openGPSNavigation, callPhone, getNextAction } from '@/lib/driverUtils';
-import { TRACKED_DELIVERY_STATUSES } from '@/components/order/OrderDetailConstants';
 import { startConversation } from '@/lib/chatUtils';
-import { startTracking } from '@/lib/trackingService';
 import { sendNotificationToUser } from '@/lib/notificationService';
 import DeliveryStatusBadge from './DeliveryStatusBadge';
 
@@ -17,6 +15,12 @@ const DELIVERY_NOTIFICATION_LABELS: Partial<Record<DeliveryStatus, string>> = {
   en_route_client: 'Le livreur est en route vers vous',
   arrived: 'Le livreur est arrive a votre adresse',
 };
+
+interface VendorContact {
+  vendor_id: string | null;
+  shop_name: string | null;
+  phone: string | null;
+}
 
 interface ActiveDeliveryCardProps {
   delivery: DeliveryRequest;
@@ -30,25 +34,32 @@ export default function ActiveDeliveryCard({ delivery, userId, onUpdate }: Activ
   const [contactingClient, setContactingClient] = useState(false);
   const [contactingVendor, setContactingVendor] = useState(false);
   const [contactingAdmin, setContactingAdmin] = useState(false);
-  const trackingCleanupRef = useRef<(() => void) | null>(null);
+  const [vendorContact, setVendorContact] = useState<VendorContact | null>(null);
 
+  // Le suivi GPS n'est plus lance ici mais dans DriverHomeScreen : une carte
+  // qui disparait (changement d'onglet) coupait le suivi chez le vendeur.
+
+  // Le livreur ne peut pas lire les commandes ni le profil du vendeur : une
+  // RPC lui renvoie uniquement le nom, l'identifiant et le telephone du
+  // vendeur de SA course. Sans elle, le bouton « Vendeur » ne faisait rien et
+  // le numero n'apparaissait jamais.
   useEffect(() => {
-    // Liste partagee avec l'ecran de commande : le livreur doit emettre sa
-    // position exactement tant que les autres affichent la carte. 'assigned' y
-    // figure car c'est la phase ou le vendeur attend de le voir arriver, et
-    // 'arrived' aussi, sinon la carte du client s'eteignait pile au moment ou
-    // il recevait « le livreur est arrive ».
-    const shouldTrack = TRACKED_DELIVERY_STATUSES.includes(delivery.status);
-    if (shouldTrack) {
-      startTracking(userId, delivery.id, 'delivery', 'driver').then((result) => {
-        if (result) trackingCleanupRef.current = result.cleanup;
+    let cancelled = false;
+    (supabase as any)
+      .rpc('get_delivery_vendor_contact', { p_delivery_id: delivery.id })
+      .then(({ data, error }: any) => {
+        if (cancelled) return;
+        if (error) {
+          console.warn('[driver] contact vendeur indisponible:', error.message);
+          return;
+        }
+        const row = Array.isArray(data) ? data[0] : data;
+        if (row) setVendorContact(row as VendorContact);
       });
-    }
     return () => {
-      trackingCleanupRef.current?.();
-      trackingCleanupRef.current = null;
+      cancelled = true;
     };
-  }, [delivery.status, delivery.id, userId]);
+  }, [delivery.id]);
 
   const handleContactClient = useCallback(async () => {
     if (!delivery.order_id || contactingClient) return;
@@ -70,29 +81,30 @@ export default function ActiveDeliveryCard({ delivery, userId, onUpdate }: Activ
   }, [delivery.order_id, userId, contactingClient, router]);
 
   const handleContactVendor = useCallback(async () => {
-    if (!delivery.order_id || contactingVendor) return;
+    if (contactingVendor) return;
     setContactingVendor(true);
     try {
-      const { data: order } = await supabase
-        .from('orders')
-        .select('shop_id')
-        .eq('id', delivery.order_id)
-        .maybeSingle();
-      if (!order?.shop_id) return;
-      const { data: shop } = await supabase
-        .from('shops')
-        .select('owner_id')
-        .eq('id', order.shop_id)
-        .maybeSingle();
-      if (!shop?.owner_id) return;
-      const convoId = await startConversation(userId, shop.owner_id);
+      let vendorId = vendorContact?.vendor_id;
+      if (!vendorId) {
+        const { data } = await (supabase as any).rpc('get_delivery_vendor_contact', {
+          p_delivery_id: delivery.id,
+        });
+        const row = Array.isArray(data) ? data[0] : data;
+        vendorId = row?.vendor_id;
+      }
+      if (!vendorId) {
+        Alert.alert('Vendeur indisponible', 'Impossible de retrouver le vendeur de cette course.');
+        return;
+      }
+      const convoId = await startConversation(userId, vendorId);
       router.push(`/chat/${convoId}` as any);
     } catch (err) {
       console.error('Error contacting vendor:', err);
+      Alert.alert('Erreur', "Impossible d'ouvrir la conversation. Veuillez réessayer.");
     } finally {
       setContactingVendor(false);
     }
-  }, [delivery.order_id, userId, contactingVendor, router]);
+  }, [delivery.id, vendorContact, userId, contactingVendor, router]);
 
   const handleContactAdmin = useCallback(async () => {
     if (contactingAdmin) return;
@@ -207,13 +219,18 @@ export default function ActiveDeliveryCard({ delivery, userId, onUpdate }: Activ
               <View style={styles.pointInfo}>
                 <Text style={styles.pointName}>{point.shop_name || point.name}</Text>
                 <Text style={styles.pointAddress}>{point.address}</Text>
-                {delivery.is_return && point.phone && (
+                {/* Affiche sur toutes les courses : c'est le recours du livreur
+                    quand le GPS ne localise pas bien le point de retrait. Avant,
+                    il n'apparaissait que sur une course retour. */}
+                {(vendorContact?.phone || point.phone) && (
                   <TouchableOpacity
                     style={styles.phoneRow}
-                    onPress={() => callPhone(point.phone!)}
+                    onPress={() => callPhone((vendorContact?.phone || point.phone)!)}
                   >
                     <Phone size={14} color="#003f2f" />
-                    <Text style={styles.phoneText}>{point.phone}</Text>
+                    <Text style={styles.phoneText}>
+                      Appeler le vendeur · {vendorContact?.phone || point.phone}
+                    </Text>
                   </TouchableOpacity>
                 )}
               </View>
