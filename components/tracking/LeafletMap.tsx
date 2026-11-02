@@ -28,7 +28,7 @@ L.control.attribution({ prefix: false }).addAttribution('© OpenStreetMap').addT
 
 var trackerIcon = L.divIcon({
   className: '',
-  html: '<div style="width:34px;height:34px;border-radius:17px;background:#003f2f;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;">➤</div>',
+  html: '<div style="width:34px;height:34px;border-radius:17px;background:#003f2f;border:3px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.35);display:flex;align-items:center;justify-content:center;color:#fff;font-size:16px;transition:transform .6s ease;">➤</div>',
   iconSize: [34, 34], iconAnchor: [17, 17]
 });
 var destIcon = L.divIcon({
@@ -37,7 +37,42 @@ var destIcon = L.divIcon({
   iconSize: [28, 28], iconAnchor: [14, 26]
 });
 
-var trackerMarker = null, destMarker = null, line = null, didFit = false;
+var trackerMarker = null, destMarker = null, line = null, didFit = false, anim = null, lastHeading = null;
+
+// Le repere glisse d'une position a la suivante au lieu de sauter : avec une
+// position toutes les 5 s, un saut donne l'impression d'un suivi en panne.
+function moveTracker(to) {
+  if (anim) { cancelAnimationFrame(anim); anim = null; }
+  var from = trackerMarker.getLatLng();
+  var dLat = to[0] - from.lat, dLng = to[1] - from.lng;
+  // Ecart de plus de ~2 km (reconnexion, premiere position fiable) : on place
+  // directement, une glissade a travers la ville serait fausse.
+  if (Math.abs(dLat) > 0.02 || Math.abs(dLng) > 0.02) { trackerMarker.setLatLng(to); syncLine(); return; }
+  var start = null, duration = 2000;
+  function step(ts) {
+    if (start === null) start = ts;
+    var t = Math.min(1, (ts - start) / duration);
+    trackerMarker.setLatLng([from.lat + dLat * t, from.lng + dLng * t]);
+    syncLine();
+    anim = t < 1 ? requestAnimationFrame(step) : null;
+  }
+  anim = requestAnimationFrame(step);
+}
+
+function syncLine() {
+  if (!line || !trackerMarker || !destMarker) return;
+  line.setLatLngs([trackerMarker.getLatLng(), destMarker.getLatLng()]);
+}
+
+// La fleche pointe vers l'est ; le cap GPS se compte depuis le nord.
+function orientTracker(heading) {
+  if (heading === null || heading === undefined) heading = lastHeading;
+  if (heading === null || heading === undefined || !trackerMarker) return;
+  lastHeading = heading;
+  var el = trackerMarker.getElement();
+  var arrow = el && el.firstChild;
+  if (arrow) arrow.style.transform = 'rotate(' + (heading - 90) + 'deg)';
+}
 
 function update(pos, dest) {
   if (dest) {
@@ -46,24 +81,27 @@ function update(pos, dest) {
   }
   if (pos) {
     if (!trackerMarker) trackerMarker = L.marker([pos.lat, pos.lng], { icon: trackerIcon }).addTo(map);
-    else trackerMarker.setLatLng([pos.lat, pos.lng]);
+    else moveTracker([pos.lat, pos.lng]);
+    orientTracker(pos.heading);
   }
-  if (pos && dest) {
-    var pts = [[pos.lat, pos.lng], [dest.lat, dest.lng]];
-    if (!line) line = L.polyline(pts, { color: '#003f2f', weight: 3, dashArray: '8,8', opacity: 0.7 }).addTo(map);
-    else line.setLatLngs(pts);
+  if (pos && dest && !line) {
+    line = L.polyline([[pos.lat, pos.lng], [dest.lat, dest.lng]], { color: '#003f2f', weight: 3, dashArray: '8,8', opacity: 0.7 }).addTo(map);
   }
+  syncLine();
   if (!didFit) {
     didFit = true;
     if (pos && dest) map.fitBounds([[pos.lat, pos.lng], [dest.lat, dest.lng]], { padding: [45, 45] });
     else if (pos) map.setView([pos.lat, pos.lng], 15);
     else if (dest) map.setView([dest.lat, dest.lng], 15);
     else map.setView([5.348, -4.027], 12);
-  } else if (pos) {
+  } else if (pos && !map.getBounds().pad(-0.15).contains([pos.lat, pos.lng])) {
+    // La carte ne recentre que si le livreur sort de la zone visible : la
+    // recentrer a chaque position empechait le client de zoomer ou de deplacer
+    // la carte.
     map.panTo([pos.lat, pos.lng], { animate: true });
   }
 }
-update(${position ? JSON.stringify({ lat: position.lat, lng: position.lng }) : 'null'}, ${destination ? JSON.stringify(destination) : 'null'});
+update(${position ? JSON.stringify({ lat: position.lat, lng: position.lng, heading: position.heading ?? null }) : 'null'}, ${destination ? JSON.stringify(destination) : 'null'});
 </script></body></html>`;
 
 export default function LeafletMap({ position, destination, style }: Props) {
@@ -76,10 +114,12 @@ export default function LeafletMap({ position, destination, style }: Props) {
 
   useEffect(() => {
     if (!webRef.current) return;
-    const pos = position ? JSON.stringify({ lat: position.lat, lng: position.lng }) : 'null';
+    const pos = position
+      ? JSON.stringify({ lat: position.lat, lng: position.lng, heading: position.heading ?? null })
+      : 'null';
     const dest = destination ? JSON.stringify(destination) : 'null';
     webRef.current.injectJavaScript(`try{update(${pos}, ${dest});}catch(e){};true;`);
-  }, [position?.lat, position?.lng, destination?.lat, destination?.lng]);
+  }, [position?.lat, position?.lng, position?.heading, destination?.lat, destination?.lng]);
 
   if (Platform.OS === 'web') {
     return (

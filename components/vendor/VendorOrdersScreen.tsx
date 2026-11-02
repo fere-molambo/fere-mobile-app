@@ -1,7 +1,7 @@
 import React, { useState, useEffect, useCallback, useMemo } from 'react';
 import {
   View, Text, StyleSheet, ScrollView, TouchableOpacity, ActivityIndicator,
-  RefreshControl, Image,
+  RefreshControl, Image, AppState,
 } from 'react-native';
 import { Package, Calendar, Phone, Store, AlertTriangle } from 'lucide-react-native';
 import { useRouter } from 'expo-router';
@@ -14,6 +14,8 @@ import OrderFilters, { getDateRangeStart, type DatePreset } from '@/components/v
 import { resolveVendorShopIds, getVendorServiceIds } from '@/lib/vendorUtils';
 import { formatBookingDate, formatBookingTime, formatPrice } from '@/lib/bookingUtils';
 import { sendNotificationToUser } from '@/lib/notificationService';
+import { ensureTrackingAlive, syncTracking } from '@/lib/trackingService';
+import TrackingShareStatus from '@/components/tracking/TrackingShareStatus';
 import type { AppRole, BookingStatus, BookingPaymentStatus } from '@/types/database';
 
 interface Props {
@@ -86,6 +88,7 @@ interface VendorOrder {
 
 interface VendorBooking {
   id: string;
+  accepted_by?: string | null;
   service_id: string;
   booking_date: string;
   booking_time: string;
@@ -172,7 +175,7 @@ export default function VendorOrdersScreen({ userId, userRole }: Props) {
       .select(`
         id, service_id, booking_date, booking_time, status, payment_status,
         total_price, travel_fee, travel_fee_paid, commission_amount, tva_amount,
-        created_at, customer_id,
+        created_at, customer_id, accepted_by,
         service:services(name, main_media_url),
         customer:profiles!service_bookings_customer_id_fkey(id, nom_complet, contact, email),
         delivery_address:delivery_addresses(label, address, city, geolocation_lat, geolocation_lng)
@@ -184,6 +187,30 @@ export default function VendorOrdersScreen({ userId, userRole }: Props) {
   };
 
   useEffect(() => { loadData(); }, [loadData]);
+
+  // Prestations ou CET utilisateur est en route : la boutique peut avoir une
+  // equipe, seul celui qui a accepte la prestation doit etre suivi, sinon deux
+  // reperes se disputeraient la carte du client.
+  const trackedBookingsKey = bookings
+    .filter((b) => b.status === 'on_the_way' && (!b.accepted_by || b.accepted_by === userId))
+    .map((b) => b.id)
+    .sort()
+    .join(',');
+
+  // Le suivi suit l'etat des prestations, plus l'ouverture de la fiche : fermer
+  // la fiche pour lancer Google Maps coupait le suivi chez le client.
+  useEffect(() => {
+    if (!userId || loading) return;
+    syncTracking(userId, 'vendor', 'booking', trackedBookingsKey ? trackedBookingsKey.split(',') : []);
+  }, [userId, trackedBookingsKey, loading]);
+
+  useEffect(() => {
+    if (!userId || !trackedBookingsKey) return;
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') ensureTrackingAlive(userId);
+    });
+    return () => sub.remove();
+  }, [userId, trackedBookingsKey]);
 
   useEffect(() => {
     if (shopIds.length === 0) return;
@@ -309,6 +336,7 @@ export default function VendorOrdersScreen({ userId, userRole }: Props) {
   return (
     <View style={styles.container}>
       <AppHeader hideCart />
+      {trackedBookingsKey ? <TrackingShareStatus trackerId={userId} /> : null}
       <View style={styles.tabs}>
         <TouchableOpacity
           style={[styles.tabBtn, tab === 'products' && styles.tabBtnActive]}

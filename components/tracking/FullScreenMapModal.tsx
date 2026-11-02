@@ -2,6 +2,7 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity, Modal, Platform } from 'react-native';
 import { X, Navigation, MapPin, Gauge } from 'lucide-react-native';
 import LeafletMap from '@/components/tracking/LeafletMap';
+import type { PositionFreshness } from '@/lib/trackingFreshness';
 
 interface Position {
   lat: number;
@@ -16,6 +17,7 @@ interface Props {
   position: Position | null;
   destination?: { lat: number; lng: number } | null;
   trackerLabel?: string;
+  freshness?: PositionFreshness;
 }
 
 function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: number): number {
@@ -29,7 +31,7 @@ function calculateDistance(lat1: number, lng1: number, lat2: number, lng2: numbe
   return R * 2 * Math.atan2(Math.sqrt(a), Math.sqrt(1 - a));
 }
 
-export default function FullScreenMapModal({ visible, onClose, position, destination, trackerLabel }: Props) {
+export default function FullScreenMapModal({ visible, onClose, position, destination, trackerLabel, freshness }: Props) {
   const dist = position && destination ? calculateDistance(position.lat, position.lng, destination.lat, destination.lng) : null;
   const distText = dist !== null ? (dist < 1 ? `${Math.round(dist * 1000)} m` : `${dist.toFixed(1)} km`) : null;
   const etaMinutes = dist !== null && position?.speed && position.speed > 1 ? Math.ceil((dist * 1000) / (position.speed * 60)) : null;
@@ -47,10 +49,12 @@ export default function FullScreenMapModal({ visible, onClose, position, destina
 
         <View style={styles.mapArea}>
           <LeafletMap position={position} destination={destination} />
+          {/* Ce badge affichait « EN DIRECT » des qu'une position existait,
+              meme figee depuis une heure. */}
           {position && (
             <View style={styles.liveIndicator}>
-              <View style={styles.liveDot} />
-              <Text style={styles.liveText}>EN DIRECT</Text>
+              <View style={[styles.liveDot, freshness && !freshness.live && styles.staleDot]} />
+              <Text style={styles.liveText}>{freshness?.badge ?? 'EN DIRECT'}</Text>
             </View>
           )}
         </View>
@@ -168,6 +172,7 @@ const styles = StyleSheet.create({
     gap: 6,
   },
   liveDot: { width: 8, height: 8, borderRadius: 4, backgroundColor: '#22c55e' },
+  staleDot: { backgroundColor: '#f59e0b' },
   liveText: { color: '#fff', fontSize: 11, fontWeight: '700', letterSpacing: 0.5 },
   statsBar: {
     flexDirection: 'row',

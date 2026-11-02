@@ -1,5 +1,6 @@
 import React, { useState, useEffect, useCallback } from 'react';
 import {
+  AppState,
   View,
   Text,
   StyleSheet,
@@ -14,7 +15,8 @@ import AvailableDeliveries from './AvailableDeliveries';
 import ActiveDeliveries from './ActiveDeliveries';
 import DeliveryHistory from './DeliveryHistory';
 import DriverStatusBanner from './DriverStatusBanner';
-import { syncDriverTracking } from '@/lib/trackingService';
+import { ensureTrackingAlive, syncTracking } from '@/lib/trackingService';
+import TrackingShareStatus from '@/components/tracking/TrackingShareStatus';
 import { TRACKED_DELIVERY_STATUSES } from '@/components/order/OrderDetailConstants';
 
 type DriverTab = 'available' | 'active' | 'history';
@@ -59,8 +61,18 @@ export default function DriverHomeScreen({ userId }: DriverHomeScreenProps) {
   // couperait le suivi de toutes les courses au demarrage.
   useEffect(() => {
     if (!userId || loading) return;
-    syncDriverTracking(userId, trackedKey ? trackedKey.split(',') : []);
+    syncTracking(userId, 'driver', 'delivery', trackedKey ? trackedKey.split(',') : []);
   }, [userId, trackedKey, loading]);
+
+  // Chien de garde : a chaque retour dans FERE, si le systeme a coupe le GPS
+  // pendant que l'application etait en arriere-plan, on le relance.
+  useEffect(() => {
+    if (!userId || !trackedKey) return;
+    const sub = AppState.addEventListener('change', (state) => {
+      if (state === 'active') ensureTrackingAlive(userId);
+    });
+    return () => sub.remove();
+  }, [userId, trackedKey]);
 
   useEffect(() => {
     const channel = supabase
@@ -176,6 +188,10 @@ export default function DriverHomeScreen({ userId }: DriverHomeScreenProps) {
       {/* Sans ce bandeau, un livreur non valide voit simplement une liste vide
           sans comprendre pourquoi : les courses lui sont masquees cote base. */}
       <DriverStatusBanner userId={userId} />
+
+      {/* Visible tant qu'une course est suivie : une panne d'envoi du GPS ne
+          doit plus passer inapercue. */}
+      {trackedKey ? <TrackingShareStatus trackerId={userId} /> : null}
 
       <View style={styles.tabBar}>
         {tabs.map((tab) => (

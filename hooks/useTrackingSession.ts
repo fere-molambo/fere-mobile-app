@@ -35,18 +35,30 @@ export function useTrackingSession(referenceId: string): UseTrackingSessionResul
         .maybeSingle();
 
       if (data && data.current_lat && data.current_lng) {
-        setPosition({
-          lat: data.current_lat,
-          lng: data.current_lng,
-          heading: data.heading,
-          speed: data.speed,
-        });
+        // Meme position, meme heure : on ne touche pas l'etat, sinon chaque
+        // interrogation relancerait l'animation du repere pour rien.
+        setPosition((prev) =>
+          prev && prev.lat === data.current_lat && prev.lng === data.current_lng
+            ? prev
+            : {
+                lat: data.current_lat,
+                lng: data.current_lng,
+                heading: data.heading,
+                speed: data.speed,
+              },
+        );
         setIsActive(true);
         setUpdatedAt(data.updated_at ?? null);
       }
     };
 
     loadSession();
+
+    // Filet de securite : sur les reseaux 3G/4G, la connexion temps reel
+    // decroche souvent sans prevenir, et le repere se figeait alors que le
+    // livreur continuait d'envoyer. Une interrogation legere (une ligne)
+    // toutes les 10 s garantit que la carte suit quoi qu'il arrive.
+    const poll = setInterval(loadSession, 10000);
 
     const channel = supabase
       .channel(`tracking-${referenceId}-${Date.now()}-${Math.random().toString(36).slice(2)}`)
@@ -82,6 +94,7 @@ export function useTrackingSession(referenceId: string): UseTrackingSessionResul
     channelRef.current = channel;
 
     return () => {
+      clearInterval(poll);
       if (channelRef.current) {
         supabase.removeChannel(channelRef.current);
       }

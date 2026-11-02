@@ -1,15 +1,12 @@
 import { Platform } from 'react-native';
 import { supabase } from '@/lib/supabase';
 import {
-  pushDriverPosition,
-  startDriverBackgroundTracking,
-  stopDriverBackgroundTracking,
+  STALE_AFTER_MS,
+  pushTrackerPosition,
+  restartBackgroundTracking,
+  startBackgroundTracking,
+  stopBackgroundTracking,
 } from '@/lib/backgroundTracking';
-
-interface TrackingResult {
-  sessionId: string;
-  cleanup: () => void;
-}
 
 // La table impose CHECK (reference_type IN ('delivery_request','service_booking')).
 // Les écrans passent les noms courts : on les traduit ici.
@@ -19,6 +16,8 @@ const REFERENCE_TYPES: Record<string, string> = {
   booking: 'service_booking',
   service_booking: 'service_booking',
 };
+
+export type TrackerRole = 'driver' | 'vendor';
 
 /**
  * Garantit une session active pour ce suivi. Pas d'upsert : aucune contrainte
@@ -84,127 +83,93 @@ async function ensureSession(
   return created.id;
 }
 
+async function pushCurrentPosition(trackerId: string): Promise<void> {
+  try {
+    const Location = require('expo-location');
+    const current = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
+    await pushTrackerPosition(trackerId, current);
+  } catch (err: any) {
+    console.warn('[tracking] position immédiate indisponible:', err?.message || err);
+  }
+}
+
 /**
- * Aligne le suivi du livreur sur ses courses en cours : une session active par
- * course suivie, aucune pour les autres, et la tache d'arriere-plan qui tourne
+ * Aligne le suivi sur ce qui est reellement en cours : les courses du livreur,
+ * ou les prestations ou le prestataire est en route. Une session active par
+ * element suivi, aucune pour les autres, et la tache d'arriere-plan qui tourne
  * tant qu'il en reste une.
  *
  * Le suivi depend de l'etat des courses, plus d'un ecran : avant, chaque carte
- * de course lancait son propre GPS et le coupait en disparaissant, si bien que
- * changer d'onglet suffisait a faire disparaitre le livreur chez le vendeur.
+ * ou fiche lancait son propre GPS et le coupait en disparaissant, si bien que
+ * changer d'onglet ou fermer une fiche suffisait a figer le repere.
  */
-export async function syncDriverTracking(driverId: string, deliveryIds: string[]): Promise<void> {
-  if (Platform.OS === 'web' || !driverId) return;
+export async function syncTracking(
+  trackerId: string,
+  role: TrackerRole,
+  referenceType: 'delivery' | 'booking',
+  referenceIds: string[],
+): Promise<void> {
+  if (Platform.OS === 'web' || !trackerId) return;
 
   try {
     let deactivate = supabase
       .from('live_tracking_sessions')
       .update({ is_active: false, updated_at: new Date().toISOString() })
-      .eq('tracker_id', driverId)
-      .eq('tracker_role', 'driver')
+      .eq('tracker_id', trackerId)
+      .eq('tracker_role', role)
       .eq('is_active', true);
-    if (deliveryIds.length > 0) {
-      deactivate = deactivate.not('reference_id', 'in', `(${deliveryIds.join(',')})`);
+    if (referenceIds.length > 0) {
+      deactivate = deactivate.not('reference_id', 'in', `(${referenceIds.join(',')})`);
     }
     const { error: deactivateError } = await deactivate;
     if (deactivateError) console.error('[tracking] désactivation:', deactivateError.message);
 
-    if (deliveryIds.length === 0) {
-      await stopDriverBackgroundTracking();
+    if (referenceIds.length === 0) {
+      await stopBackgroundTracking();
       return;
     }
 
-    for (const deliveryId of deliveryIds) {
-      await ensureSession(driverId, deliveryId, 'delivery', 'driver');
+    for (const referenceId of referenceIds) {
+      await ensureSession(trackerId, referenceId, referenceType, role);
     }
 
-    const started = await startDriverBackgroundTracking();
-    if (!started) return;
-
+    const started = await startBackgroundTracking();
     // Premiere position tout de suite : la tache n'en livre une qu'apres
     // quelques secondes, et une course qui vient d'etre acceptee doit
-    // apparaitre sur la carte du vendeur sans attendre.
-    const Location = require('expo-location');
-    const current = await Location.getCurrentPositionAsync({ accuracy: Location.Accuracy.High });
-    await pushDriverPosition(driverId, current);
+    // apparaitre sur la carte sans attendre.
+    if (started) await pushCurrentPosition(trackerId);
   } catch (err: any) {
-    console.error('[tracking] syncDriverTracking:', err?.message || err);
+    console.error('[tracking] syncTracking:', err?.message || err);
   }
 }
 
-export async function startTracking(
-  userId: string,
-  referenceId: string,
-  referenceType: string,
-  trackerRole: string
-): Promise<TrackingResult | null> {
-  if (Platform.OS === 'web') return null;
-
-  try {
-    const Location = require('expo-location');
-
-    const { status } = await Location.requestForegroundPermissionsAsync();
-    if (status !== 'granted') {
-      console.warn('[tracking] permission de localisation refusée');
-      return null;
-    }
-
-    const sessionId = await ensureSession(userId, referenceId, referenceType, trackerRole);
-    if (!sessionId) return null;
-
-    const pushPosition = (coords: any) => {
-      supabase
-        .from('live_tracking_sessions')
-        .update({
-          current_lat: coords.latitude,
-          current_lng: coords.longitude,
-          // Android renvoie -1 quand le cap est inconnu
-          heading: coords.heading != null && coords.heading >= 0 ? coords.heading : null,
-          speed: coords.speed != null && coords.speed >= 0 ? coords.speed : null,
-          is_active: true,
-          updated_at: new Date().toISOString(),
-        })
-        .eq('id', sessionId)
-        .then(({ error }: any) => {
-          if (error) console.error('[tracking] update position:', error.message);
-        });
-    };
-
-    // Première position immédiate : sans ça la carte reste vide jusqu'au premier
-    // déplacement de 10 m.
-    try {
-      const first = await Location.getCurrentPositionAsync({
-        accuracy: Location.Accuracy.High,
-      });
-      pushPosition(first.coords);
-    } catch (e) {
-      console.warn('[tracking] position initiale indisponible');
-    }
-
-    const subscription = await Location.watchPositionAsync(
-      {
-        accuracy: Location.Accuracy.High,
-        timeInterval: 5000,
-        distanceInterval: 10,
-      },
-      (location: any) => pushPosition(location.coords)
-    );
-
-    const cleanup = () => {
-      subscription.remove();
-      if (sessionId) stopTracking(sessionId);
-    };
-
-    return { sessionId: sessionId!, cleanup };
-  } catch (err: any) {
-    console.error('[tracking] startTracking:', err?.message || err);
-    return null;
-  }
-}
-
-export async function stopTracking(sessionId: string): Promise<void> {
-  await supabase
+/** Heure de la derniere position enregistree en base pour cet utilisateur. */
+export async function fetchLastTrackedAt(trackerId: string): Promise<number | null> {
+  const { data } = await supabase
     .from('live_tracking_sessions')
-    .update({ is_active: false, updated_at: new Date().toISOString() })
-    .eq('id', sessionId);
+    .select('updated_at')
+    .eq('tracker_id', trackerId)
+    .eq('is_active', true)
+    .order('updated_at', { ascending: false })
+    .limit(1)
+    .maybeSingle();
+  return data?.updated_at ? new Date(data.updated_at).getTime() : null;
+}
+
+/**
+ * Chien de garde, appele a chaque retour dans l'application et depuis le
+ * bouton « Reactiver ». Quand le systeme tue le service, la tache reste
+ * enregistree mais plus rien n'arrive : si la derniere position date de plus
+ * d'une minute, on relance tout.
+ */
+export async function ensureTrackingAlive(trackerId: string, force = false): Promise<boolean> {
+  if (Platform.OS === 'web' || !trackerId) return false;
+
+  const lastAt = await fetchLastTrackedAt(trackerId);
+  if (lastAt === null) return false;
+  if (!force && Date.now() - lastAt < STALE_AFTER_MS) return true;
+
+  const restarted = await restartBackgroundTracking();
+  if (restarted) await pushCurrentPosition(trackerId);
+  return restarted;
 }

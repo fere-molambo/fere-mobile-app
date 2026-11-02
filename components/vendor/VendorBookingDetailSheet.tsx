@@ -1,4 +1,4 @@
-import React, { useState, useRef, useEffect } from 'react';
+import React, { useState } from 'react';
 import {
   View, Text, StyleSheet, Modal, TouchableOpacity, ScrollView, ActivityIndicator,
   Linking, TextInput,
@@ -12,7 +12,6 @@ import BookingStatusBadge from '@/components/BookingStatusBadge';
 import PaymentStatusBadge from '@/components/PaymentStatusBadge';
 import { formatBookingDate, formatBookingTime, formatPrice } from '@/lib/bookingUtils';
 import { startConversation } from '@/lib/chatUtils';
-import { startTracking } from '@/lib/trackingService';
 import TrackingMap from '@/components/tracking/TrackingMap';
 import { supabase } from '@/lib/supabase';
 import type { BookingStatus, BookingPaymentStatus } from '@/types/database';
@@ -49,20 +48,8 @@ export default function VendorBookingDetailSheet({ booking, onClose, onAction, v
   const [acting, setActing] = useState(false);
   const [disputeComment, setDisputeComment] = useState(booking.vendor_dispute_comment || '');
   const [savingComment, setSavingComment] = useState(false);
-  const trackingCleanupRef = useRef<(() => void) | null>(null);
-
-  useEffect(() => {
-    const shouldTrack = booking.status === 'on_the_way';
-    if (shouldTrack) {
-      startTracking(vendorUserId, booking.id, 'booking', 'vendor').then((result) => {
-        if (result) trackingCleanupRef.current = result.cleanup;
-      });
-    }
-    return () => {
-      trackingCleanupRef.current?.();
-      trackingCleanupRef.current = null;
-    };
-  }, [booking.status, booking.id, vendorUserId]);
+  // Le suivi GPS n'est plus lance ici mais dans VendorOrdersScreen : fermer
+  // cette fiche pour ouvrir Google Maps coupait le suivi chez le client.
 
   const handleAction = async (action: string) => {
     setActing(true);

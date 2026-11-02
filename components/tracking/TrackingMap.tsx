@@ -3,6 +3,7 @@ import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { MapPin, Maximize2 } from 'lucide-react-native';
 import { useTrackingSession } from '@/hooks/useTrackingSession';
 import FullScreenMapModal from '@/components/tracking/FullScreenMapModal';
+import { getPositionFreshness } from '@/lib/trackingFreshness';
 import LeafletMap from '@/components/tracking/LeafletMap';
 
 interface Props {
@@ -56,16 +57,7 @@ export default function TrackingMap({ referenceId, referenceType, destination, d
   const etaMinutes = dist !== null && position?.speed && position.speed > 1 ? Math.ceil((dist * 1000) / (position.speed * 60)) : null;
   const speedKmh = position?.speed && position.speed > 0 ? Math.round(position.speed * 3.6) : null;
 
-  // « En direct » s'affichait des qu'une position existait, meme vieille de dix
-  // minutes : le vendeur voyait un repere fige presente comme du temps reel.
-  const ageSeconds = updatedAt ? Math.max(0, Math.round((now - new Date(updatedAt).getTime()) / 1000)) : null;
-  const freshness = !position
-    ? { label: 'Hors ligne', stale: true }
-    : ageSeconds === null || ageSeconds < 60
-      ? { label: 'En direct', stale: false }
-      : ageSeconds < 3600
-        ? { label: `Il y a ${Math.round(ageSeconds / 60)} min`, stale: true }
-        : { label: 'Position ancienne', stale: true };
+  const freshness = getPositionFreshness(updatedAt, now, !!position);
 
   return (
     <View style={styles.container}>
@@ -84,7 +76,7 @@ export default function TrackingMap({ referenceId, referenceType, destination, d
       <View style={styles.infoBar}>
         <View style={styles.infoItem}>
           <Text style={styles.infoLabel}>{trackerLabel || 'Position'}</Text>
-          <Text style={[styles.infoValue, freshness.stale && styles.infoValueStale]}>
+          <Text style={[styles.infoValue, !freshness.live && styles.infoValueStale]}>
             {freshness.label}
           </Text>
         </View>
@@ -108,7 +100,7 @@ export default function TrackingMap({ referenceId, referenceType, destination, d
         )}
       </View>
 
-      <FullScreenMapModal visible={fullscreen} onClose={() => setFullscreen(false)} position={position} destination={resolvedDestination} trackerLabel={trackerLabel} />
+      <FullScreenMapModal visible={fullscreen} onClose={() => setFullscreen(false)} position={position} destination={resolvedDestination} trackerLabel={trackerLabel} freshness={freshness} />
     </View>
   );
 }
