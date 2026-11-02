@@ -44,15 +44,21 @@ async function ensureSession(
     // rafraichissement de la liste reinitialiserait started_at pour rien.
     if (existing.is_active) return existing.id;
 
-    const now = new Date().toISOString();
+    // Un declencheur remet updated_at a « maintenant » a chaque modification :
+    // reactiver la session ferait passer son ancienne position, parfois vieille
+    // de plusieurs jours, pour une position en direct. On l'efface, la session
+    // repart comme neuve jusqu'au premier vrai envoi.
     const { error } = await supabase
       .from('live_tracking_sessions')
       .update({
         tracker_role: trackerRole,
         reference_type: dbReferenceType,
         is_active: true,
-        started_at: now,
-        updated_at: now,
+        started_at: new Date().toISOString(),
+        current_lat: null,
+        current_lng: null,
+        heading: null,
+        speed: null,
       })
       .eq('id', existing.id);
     if (error) {
@@ -150,24 +156,55 @@ export async function fetchLastTrackedAt(trackerId: string): Promise<number | nu
     .select('updated_at')
     .eq('tracker_id', trackerId)
     .eq('is_active', true)
+    // Une session creee ou reactivee a un updated_at frais sans aucune position.
+    .not('current_lat', 'is', null)
     .order('updated_at', { ascending: false })
     .limit(1)
     .maybeSingle();
   return data?.updated_at ? new Date(data.updated_at).getTime() : null;
 }
 
+async function hasActiveSessions(trackerId: string): Promise<boolean> {
+  const { count } = await supabase
+    .from('live_tracking_sessions')
+    .select('id', { count: 'exact', head: true })
+    .eq('tracker_id', trackerId)
+    .eq('is_active', true);
+  return (count ?? 0) > 0;
+}
+
 /**
- * Chien de garde, appele a chaque retour dans l'application et depuis le
- * bouton « Reactiver ». Quand le systeme tue le service, la tache reste
- * enregistree mais plus rien n'arrive : si la derniere position date de plus
- * d'une minute, on relance tout.
+ * Chien de garde, appele a chaque retour dans l'application. Quand le systeme
+ * tue le service, la tache reste enregistree mais plus rien n'arrive : si la
+ * derniere position date de plus d'une minute, ou s'il n'y en a jamais eu, on
+ * relance tout.
  */
-export async function ensureTrackingAlive(trackerId: string, force = false): Promise<boolean> {
+export async function ensureTrackingAlive(trackerId: string): Promise<boolean> {
   if (Platform.OS === 'web' || !trackerId) return false;
+  if (!(await hasActiveSessions(trackerId))) return false;
 
   const lastAt = await fetchLastTrackedAt(trackerId);
-  if (lastAt === null) return false;
-  if (!force && Date.now() - lastAt < STALE_AFTER_MS) return true;
+  if (lastAt !== null && Date.now() - lastAt < STALE_AFTER_MS) return true;
+
+  const restarted = await restartBackgroundTracking();
+  if (restarted) await pushCurrentPosition(trackerId);
+  return restarted;
+}
+
+/**
+ * Bouton « Actualiser » : envoie la position tout de suite, et relance le
+ * service s'il s'etait arrete. Avant, ce bouton sortait sans rien faire quand
+ * aucune position n'avait encore ete envoyee.
+ */
+export async function refreshTrackingNow(trackerId: string): Promise<boolean> {
+  if (Platform.OS === 'web' || !trackerId) return false;
+  if (!(await hasActiveSessions(trackerId))) return false;
+
+  const lastAt = await fetchLastTrackedAt(trackerId);
+  if (lastAt !== null && Date.now() - lastAt < STALE_AFTER_MS) {
+    await pushCurrentPosition(trackerId);
+    return true;
+  }
 
   const restarted = await restartBackgroundTracking();
   if (restarted) await pushCurrentPosition(trackerId);

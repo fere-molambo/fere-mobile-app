@@ -146,6 +146,40 @@ export async function stopBackgroundTracking(): Promise<void> {
   }
 }
 
+export type LocationProblem = 'services_off' | 'permission_denied' | null;
+
+/**
+ * Pourquoi le GPS ne peut pas envoyer : localisation coupee sur le telephone,
+ * ou autorisation refusee a FERE. Sans ce diagnostic, le livreur voyait une
+ * alerte sans savoir quoi faire — le cas de l'iPhone du test du 27 septembre.
+ */
+export async function getLocationProblem(): Promise<{ problem: LocationProblem; canAskAgain: boolean }> {
+  if (Platform.OS === 'web') return { problem: null, canAskAgain: false };
+  try {
+    if (!(await Location.hasServicesEnabledAsync())) {
+      return { problem: 'services_off', canAskAgain: false };
+    }
+    const permission = await Location.getForegroundPermissionsAsync();
+    if (permission.status !== 'granted') {
+      return { problem: 'permission_denied', canAskAgain: permission.canAskAgain };
+    }
+  } catch {
+    // diagnostic indisponible : on laisse le bouton tenter une relance
+  }
+  return { problem: null, canAskAgain: false };
+}
+
+/** Android affiche la boite systeme « Activer la localisation ? ». */
+export async function askToEnableLocationServices(): Promise<boolean> {
+  if (Platform.OS !== 'android') return false;
+  try {
+    await Location.enableNetworkProviderAsync();
+    return await Location.hasServicesEnabledAsync();
+  } catch {
+    return false;
+  }
+}
+
 /**
  * Relance complete. Quand le systeme tue le service, la tache reste
  * enregistree : hasStartedLocationUpdatesAsync repond « oui » alors que plus
